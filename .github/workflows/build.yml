@@ -1,0 +1,72 @@
+name: Build (Cross-platform, CMake)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+
+  # macOS
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S Emulator -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Upload macOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: build/e_paper_emulator.app
+
+
+  # Windows
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S Emulator -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Upload Windows exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: build/Release/e_paper_emulator.exe
+
+
+  # Linux
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libgl1-mesa-dev
+
+      - name: Configure
+        run: cmake -S Emulator -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: build/e_paper_emulator
