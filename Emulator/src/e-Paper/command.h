@@ -13,14 +13,12 @@
 #include "e-Paper/EPD_5in79g.h"
 #include "Canvas/GUI_Paint.h"
 
-struct command;
-using CmdHandler = std::function<void(const command&)>;
-
-
 struct command {
     std::string name;
     std::map<std::string, std::string> args;
 };
+
+using CmdHandler = std::function<void(const command&)>;
 
 void execute_command(const command& command);
 

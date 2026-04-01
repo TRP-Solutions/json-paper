@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-class command;
+struct command;
 
 class Request {
 public:
