@@ -10,6 +10,7 @@ jobs:
 
   # macOS
   build-macos:
+    if: github.ref_type != 'tag'
     runs-on: macos-latest
 
     steps:
@@ -24,7 +25,9 @@ jobs:
       - name: Package macOS app
         run: |
           mkdir package
-          cp -R build/e_paper_emulator.app package/
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/e_paper_emulator.app \
+            package/e_paper_emulator-macos.zip
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -35,6 +38,7 @@ jobs:
 
   # Windows
   build-windows:
+    if: github.ref_type != 'tag'
     runs-on: windows-latest
 
     steps:
@@ -63,6 +67,7 @@ jobs:
 
   # Linux
   build-linux:
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
 
     steps:
