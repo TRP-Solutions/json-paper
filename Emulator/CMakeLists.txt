@@ -53,7 +53,7 @@ set(SOURCES
 
 )
 set(HEADERS
-        src/Debug.h
+        src/debug.h
         src/emulation/epd_test.h
         ${ARDUINO_DIR}/src/Font/fonts.h
         ${ARDUINO_DIR}/src/Canvas/GUI_Paint.h
