@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install latest CMake
         uses: lukka/get-cmake@latest
 
       - name: Configure
@@ -66,6 +66,9 @@ jobs:
             libxcursor-dev \
             libxi-dev \
             libgl1-mesa-dev
+
+      - name: Install latest CMake
+        uses: lukka/get-cmake@latest
 
       - name: Configure
         run: cmake -S Emulator -B build -DCMAKE_BUILD_TYPE=Release
