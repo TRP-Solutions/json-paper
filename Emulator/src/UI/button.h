@@ -26,5 +26,4 @@ public:
     void Draw();
 };
 
-
 #endif //E_PAPER_EMULATOR_BUTTON_H
