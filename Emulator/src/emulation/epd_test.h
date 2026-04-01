@@ -36,7 +36,7 @@
 #include "Canvas/GUI_Paint.h"
 #include "Font/fonts.h"
 
-class command;
+struct command;
 
 int EPD_5in79g_test(void);
 void draw_epd_5in79g_remote(std::string link);

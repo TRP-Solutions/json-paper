@@ -49,13 +49,12 @@ set(SOURCES
         ${ARDUINO_DIR}/src/Font/font20.cpp
         ${ARDUINO_DIR}/src/Font/font24.cpp
         src/network/request.cpp
-
-        src/e-Paper/Command.cpp
+        src/e-Paper/command.cpp
 
 )
 set(HEADERS
         src/Debug.h
-        src/emulation/EPD_Test.h
+        src/emulation/epd_test.h
         ${ARDUINO_DIR}/src/Font/fonts.h
         ${ARDUINO_DIR}/src/Canvas/GUI_Paint.h
         src/GUI/gui_raylib.cpp
@@ -64,7 +63,7 @@ set(HEADERS
         src/UI/button.cpp
         src/UI/button.h
         src/network/request.h
-        src/e-Paper/Command.h
+        src/e-Paper/command.h
 )
 
 set(CMAKE_CXX_STANDARD 20)
