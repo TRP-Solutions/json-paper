@@ -34,6 +34,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install latest CMake
+        uses: lukka/get-cmake@latest
+
       - name: Configure
         run: cmake -S Emulator -B build -DCMAKE_BUILD_TYPE=Release
 
@@ -58,6 +61,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libgl1-mesa-dev
+
+      - name: Install latest CMake
+        uses: lukka/get-cmake@latest
 
       - name: Configure
         run: cmake -S Emulator -B build -DCMAKE_BUILD_TYPE=Release
