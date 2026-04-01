@@ -3,6 +3,7 @@ name: Build (Cross-platform, CMake)
 on:
   push:
     branches: [ main ]
+    tags: [ "v*" ]
   pull_request:
 
 jobs:
@@ -20,11 +21,16 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Upload macOS app
+      - name: Package macOS app
+        run: |
+          mkdir package
+          cp -R build/e_paper_emulator.app package/
+
+      - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: build/e_paper_emulator.app
+          path: package
 
 
   # Windows
@@ -43,11 +49,16 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Upload Windows exe
+      - name: Package Windows exe
+        run: |
+          mkdir package
+          copy build\Release\e_paper_emulator.exe package\
+
+      - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: build/Release/e_paper_emulator.exe
+          path: package
 
 
   # Linux
@@ -76,8 +87,40 @@ jobs:
       - name: Build
         run: cmake --build build
 
-      - name: Upload Linux binary
+      - name: Package Linux binary
+        run: |
+          mkdir package
+          cp build/e_paper_emulator package/
+          chmod +x package/e_paper_emulator
+
+      - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: build/e_paper_emulator
+          path: package
+
+
+  release:
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Zip artifacts
+        run: |
+          zip -r macos.zip macos-build
+          zip -r windows.zip windows-build
+          zip -r linux.zip linux-build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            macos.zip
+            windows.zip
+            linux.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
