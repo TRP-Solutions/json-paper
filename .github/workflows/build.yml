@@ -43,6 +43,57 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
+      # Test
+      - name: Test macOS app
+        if: matrix.os == 'macos-latest'
+        run: |
+          APP="build/e_paper_emulator.app"
+          BIN="$APP/Contents/MacOS/e_paper_emulator"
+
+          echo "Checking bundle..."
+          test -d "$APP" || exit 1
+
+          echo "Checking executable..."
+          test -f "$BIN" || exit 1
+
+          chmod +x "$BIN"
+
+          echo "Trying to start app (ignore crash)..."
+          timeout 5s "$BIN" || true
+
+          echo "macOS test done"
+          
+      - name: Test Windows exe
+        if: matrix.os == 'windows-latest'
+        run: |
+          $BIN = "build\\Release\\e_paper_emulator.exe"
+          
+          Write-Host "Checking executable..."
+          if (!(Test-Path $BIN)) { exit 1 }
+          
+          Write-Host "Trying to start app (ignore crash)..."
+          Start-Process $BIN
+          
+          Start-Sleep -Seconds 5
+          
+          Get-Process e_paper_emulator -ErrorAction SilentlyContinue | Stop-Process -Force
+          
+          Write-Host "Windows test done"
+
+      - name: Test Linux binary
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          BIN="build/e_paper_emulator"
+          
+          echo "Checking executable..."
+          test -f "$BIN" || exit 1
+          
+          chmod +x "$BIN"
+          
+          echo "Trying to start app (ignore crash)..."
+          timeout 5s "$BIN" || true
+          
+          echo "Linux test done"
       # Package per OS
 
       - name: Package macOS
