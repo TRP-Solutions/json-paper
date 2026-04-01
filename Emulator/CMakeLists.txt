@@ -50,8 +50,6 @@ set(SOURCES
         ${ARDUINO_DIR}/src/Font/font24.cpp
         src/network/request.cpp
 
-        src/emulation/ImageData.cpp
-        src/emulation/ImageData2.cpp
         src/e-Paper/Command.cpp
 
 )
@@ -60,7 +58,6 @@ set(HEADERS
         src/emulation/EPD_Test.h
         ${ARDUINO_DIR}/src/Font/fonts.h
         ${ARDUINO_DIR}/src/Canvas/GUI_Paint.h
-        src/emulation/ImageData.h
         src/GUI/gui_raylib.cpp
         src/GUI/gui_raylib.h
         src/UI/input_field.h

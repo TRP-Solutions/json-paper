@@ -1,4 +1,4 @@
-#include "emulation/EPD_Test.h"
+#include "emulation/epd_test.h"
 #include "raylib.h"
 #include "GUI/gui_raylib.h"
 #include "UI/button.h"

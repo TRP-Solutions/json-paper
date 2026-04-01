@@ -7,11 +7,11 @@
 #include <string>
 #include <vector>
 
-class Command;
+class command;
 
 class Request {
 public:
-    static std::vector<Command> RequestConfig(std::string addr);
+    static std::vector<command> RequestConfig(std::string addr);
 };
 
 
