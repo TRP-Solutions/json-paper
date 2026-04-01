@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions:
+  contents: write
+
+jobs:
+
+  build-and-release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Linux deps
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libgl1-mesa-dev
+
+      # CMake (Windows + Linux)
+      - name: Install latest CMake
+        if: matrix.os != 'macos-latest'
+        uses: lukka/get-cmake@latest
+
+      - name: Configure
+        run: cmake -S Emulator -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Package macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/e_paper_emulator.app \
+            e_paper_emulator-macos.zip
+
+      - name: Package Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir package
+          copy build\Release\e_paper_emulator.exe package\
+          powershell Compress-Archive -Path package\* -DestinationPath e_paper_emulator-windows.zip
+
+      - name: Package Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir package
+          cp build/e_paper_emulator package/
+          chmod +x package/e_paper_emulator
+          zip -r e_paper_emulator-linux.zip package
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
