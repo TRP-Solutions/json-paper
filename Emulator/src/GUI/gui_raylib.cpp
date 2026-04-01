@@ -2,7 +2,7 @@
 // Created by mikke on 31/03/2026.
 //
 
-#include "GUI_Raylib.h"
+#include "gui_raylib.h"
 
 #include "raylib.h"
 #include <cstring>
