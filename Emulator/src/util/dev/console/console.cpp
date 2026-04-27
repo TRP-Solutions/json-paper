@@ -142,13 +142,13 @@ void Console::draw()
     }
 }
 
-void Console::log(LogLevel level, const std::string& format, ...)
+void Console::log(LogLevel level, const char* format, ...)
 {
     char buffer[512];
 
     va_list args;
     va_start(args, format);
-    vsnprintf(buffer, sizeof(buffer), format.c_str(), args);
+    vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
 
     if (mLogs.size() >= CONSOLE_MAX_LOG) {

@@ -31,7 +31,7 @@ public:
     // Core
     void draw();
     void handleInput();
-    void log(LogLevel level, const std::string& format, ...);
+    void log(LogLevel level, const char* format, ...);
 
     void clearLogs();
 

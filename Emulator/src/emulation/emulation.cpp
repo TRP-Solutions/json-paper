@@ -100,14 +100,14 @@ bool ParseColor(const std::string& color, uint8_t& out) {
         out = colorMap[color];
         return true;
     }
-    ConsoleManager::get().log(WARNING, "invalid color: " + color);
+    ConsoleManager::get().log(WARNING, ("invalid color: " + color).c_str());
     return false;
 }
 
 bool GetRequiredArg(const PaperCommand& cmd, const std::string& key, std::string& out) {
     auto it = cmd.args.find(key);
     if (it == cmd.args.end()) {
-        ConsoleManager::get().log(WARNING, "missing '" + key + "'");
+        ConsoleManager::get().log(WARNING, ("missing '" + key + "'").c_str());
         return false;
     }
     out = it->second;
@@ -119,7 +119,7 @@ bool ParseInt(const std::string& s, int& out) {
         out = std::stoi(s);
         return true;
     } catch (...) {
-        ConsoleManager::get().log(WARNING, "invalid int: " + s);
+        ConsoleManager::get().log(WARNING, ("invalid int: " + s).c_str());
         return false;
     }
 }
@@ -130,7 +130,7 @@ bool ParseDotPixel(const std::string& s, DOT_PIXEL& out) {
     else if (s == "3x3") out = DOT_PIXEL_3X3;
     else if (s == "4x4") out = DOT_PIXEL_4X4;
     else {
-        ConsoleManager::get().log(WARNING, "invalid width: " + s);
+        ConsoleManager::get().log(WARNING, ("invalid width: " + s).c_str());
         return false;
     }
     return true;
@@ -141,7 +141,7 @@ bool ParseLineStyle(const std::string& s, LINE_STYLE& out) {
         out = lineStyleMap[s];
         return true;
     }
-    ConsoleManager::get().log(WARNING, "invalid line style: " + s);
+    ConsoleManager::get().log(WARNING, ("invalid line style: " + s).c_str());
     return false;
 }
 bool ParseDrawFill(const std::string& s, DRAW_FILL& out) {
@@ -149,7 +149,7 @@ bool ParseDrawFill(const std::string& s, DRAW_FILL& out) {
         out = drawFillMap[s];
         return true;
     }
-    ConsoleManager::get().log(WARNING, "invalid fill: " + s);
+    ConsoleManager::get().log(WARNING, ("invalid fill: " + s).c_str());
     return false;
 }
 bool ParseDotStyle(const std::string& s, DOT_STYLE& out) {
@@ -157,7 +157,7 @@ bool ParseDotStyle(const std::string& s, DOT_STYLE& out) {
         out = dotStyleMap[s];
         return true;
     }
-    ConsoleManager::get().log(WARNING, "invalid dot style: " + s);
+    ConsoleManager::get().log(WARNING, ("invalid dot style: " + s).c_str());
     return false;
 }
 bool ParseFont(const std::string& s, sFONT*& out) {
@@ -165,7 +165,7 @@ bool ParseFont(const std::string& s, sFONT*& out) {
         out = fontMap[s];
         return true;
     }
-    ConsoleManager::get().log(WARNING, "invalid font: " + s);
+    ConsoleManager::get().log(WARNING, ("invalid font: " + s).c_str());
 
     return false;
 }
