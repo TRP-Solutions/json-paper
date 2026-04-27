@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "font_data.h"
 #include "raylib.h"
 #include "util/dev/console/command/registry.h"
 #include "util/dev/console/command/commands/core_command.h"
@@ -9,7 +10,14 @@
 Console::Console() {
     RegisterCoreCommands(mRegistry);
 
-    mFont = LoadFontEx(ASSETS_PATH "fonts/VictorMono-Medium.ttf", 14, nullptr, 0);
+    mFont = LoadFontFromMemory(
+    ".ttf",
+    VictorMono_Medium,
+    VictorMono_Medium_len,
+    14,
+    nullptr,
+    0
+);
 }
 
 void Console::setOpen(bool open) {

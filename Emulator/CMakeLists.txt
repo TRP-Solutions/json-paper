@@ -105,10 +105,6 @@ set_property(TARGET e_paper_emulator PROPERTY C_STANDARD 17)
 
 target_link_libraries(e_paper_emulator PRIVATE raylib nlohmann_json::nlohmann_json httplib)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(e_paper_emulator PUBLIC ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/")
-endif ()
-
 target_compile_definitions(e_paper_emulator PUBLIC GAME_VERSION="1.0.0")
 target_compile_definitions(e_paper_emulator PUBLIC MEMORY_RUNTIME_SAFETY=1)
 
