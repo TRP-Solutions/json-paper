@@ -80,7 +80,7 @@ set(HEADERS
 set(CMAKE_CXX_STANDARD 20)
 
 if(WIN32)
-    add_executable(e_paper_emulator ${SOURCES} ${HEADERS})
+    add_executable(e_paper_emulator WIN32 ${SOURCES} ${HEADERS})
 elseif(APPLE)
     add_executable(e_paper_emulator MACOSX_BUNDLE ${SOURCES} ${HEADERS})
 elseif(UNIX AND NOT APPLE)
