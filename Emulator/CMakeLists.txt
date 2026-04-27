@@ -81,6 +81,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 if(WIN32)
     add_executable(e_paper_emulator WIN32 ${SOURCES} ${HEADERS})
+    target_link_options(e_paper_emulator PRIVATE "/SUBSYSTEM:WINDOWS")
 elseif(APPLE)
     add_executable(e_paper_emulator MACOSX_BUNDLE ${SOURCES} ${HEADERS})
 elseif(UNIX AND NOT APPLE)
