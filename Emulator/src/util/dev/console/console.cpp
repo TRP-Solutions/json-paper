@@ -35,12 +35,12 @@ void Console::draw()
     const int lineHeight = fontSize + 2;
     const int height = 300;
 
-    DrawRectangle(0, 0, GetScreenWidth(), height, (Color){ 0, 0, 0, 220 });
+    DrawRectangle(0, 0, GetScreenWidth(), height, Color{ 0, 0, 0, 220 });
     const int inputBarHeight = lineHeight + padding * 2;
 
-    DrawRectangle(0, height - inputBarHeight, GetScreenWidth(), inputBarHeight, (Color){ 35, 35, 35, 240 });
+    DrawRectangle(0, height - inputBarHeight, GetScreenWidth(), inputBarHeight, Color{ 35, 35, 35, 240 });
 
-    DrawLine(0, height - inputBarHeight, GetScreenWidth(), height - inputBarHeight, (Color){ 60, 60, 60, 255 });
+    DrawLine(0, height - inputBarHeight, GetScreenWidth(), height - inputBarHeight, Color{ 60, 60, 60, 255 });
 
     const int logAreaHeight = height - inputBarHeight;
     int maxVisibleLines = (logAreaHeight - padding * 2) / lineHeight;
