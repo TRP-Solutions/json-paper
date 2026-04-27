@@ -8,7 +8,7 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 
-#include "../e-Paper/command.h"
+#include "../e-Paper/paper_command.h"
 
 using json = nlohmann::json;
 
@@ -31,7 +31,7 @@ std::string NormalizeHost(std::string& addr, std::string& path) {
     return addr;
 }
 
-std::vector<command> Request::RequestConfig(std::string addr) {
+std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
     std::string host = addr;
     std::string path;
 
@@ -47,14 +47,14 @@ std::vector<command> Request::RequestConfig(std::string addr) {
     }
 
     try {
-        std::vector<command> commands;
+        std::vector<PaperCommand> commands;
 
         json parsed = json::parse(res->body);
         std::cout << parsed.dump(4) << std::endl;
 
         for (const auto& item : parsed["commands"])
         {
-            command command{};
+            PaperCommand command{};
 
             // --- cmd ---
             std::string cmdStr = item["cmd"];

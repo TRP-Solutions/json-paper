@@ -36,32 +36,32 @@
 #include "Canvas/GUI_Paint.h"
 #include "Font/fonts.h"
 
-struct command;
+struct PaperCommand;
 
 int EPD_5in79g_test(void);
 void draw_epd_5in79g_remote(std::string link);
 int simulate_epd_5in79g_test(std::string link);
 
 // Core
-void Clear(const command& command);
-void ClearWindow(const command& command);
+void Clear(const PaperCommand& command);
+void ClearWindow(const PaperCommand& command);
 
 // Display control
-void SetRotate(const command& command);
-void SetMirroring(const command& command);
-void SetPixel(const command& command);
+void SetRotate(const PaperCommand& command);
+void SetMirroring(const PaperCommand& command);
+void SetPixel(const PaperCommand& command);
 
 // Drawing
-void DrawPoint(const command& command);
-void DrawLine(const command& command);
-void DrawRectangle(const command& command);
-void DrawCircle(const command& command);
+void DrawPoint(const PaperCommand& command);
+void DrawLine(const PaperCommand& command);
+void DrawRectangle(const PaperCommand& command);
+void DrawCircle(const PaperCommand& command);
 
 // Text (high-level)
-void DrawString(const command& command);
+void DrawString(const PaperCommand& command);
 
 // Text (low-level primitives)
-void DrawChar(const command& command);
-void DrawNum(const command& command);
-void DrawTime(const command& command);
+void DrawChar(const PaperCommand& command);
+void DrawNum(const PaperCommand& command);
+void DrawTime(const PaperCommand& command);
 #endif

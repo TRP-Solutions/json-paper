@@ -1,4 +1,4 @@
-#include "command.h"
+#include "paper_command.h"
 
 #include <iostream>
 
@@ -53,7 +53,7 @@ std::unordered_map<std::string, sFONT*> fontMap = {
     {"font24", &Font24}
 };
 
-void execute_command(const command& command) {
+void execute_command(const PaperCommand& command) {
     auto it = cmdMap.find(command.name);
 
     if (it != cmdMap.end()) {

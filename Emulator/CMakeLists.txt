@@ -49,8 +49,13 @@ set(SOURCES
         ${ARDUINO_DIR}/src/Font/font20.cpp
         ${ARDUINO_DIR}/src/Font/font24.cpp
         src/network/request.cpp
-        src/e-Paper/command.cpp
+        src/e-Paper/paper_command.cpp
 
+        src/util/dev/console/console.cpp
+        src/util/dev/console/command/registry.cpp
+        src/util/dev/console/command/auto_completion.cpp
+        src/util/dev/console/command/commands/core_command.cpp
+        src/manager/console_manager.cpp
 )
 set(HEADERS
         src/debug.h
@@ -63,7 +68,13 @@ set(HEADERS
         src/UI/button.cpp
         src/UI/button.h
         src/network/request.h
-        src/e-Paper/command.h
+        src/e-Paper/paper_command.h
+
+        src/util/dev/console/console.h
+        src/util/dev/console/command/registry.h
+        src/util/dev/console/command/auto_completion.h
+        src/util/dev/console/command/commands/core_command.h
+        src/manager/console_manager.h
 )
 
 set(CMAKE_CXX_STANDARD 20)

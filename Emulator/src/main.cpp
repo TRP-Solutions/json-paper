@@ -1,6 +1,7 @@
 #include "emulation/epd_test.h"
 #include "raylib.h"
 #include "GUI/gui_raylib.h"
+#include "manager/console_manager.h"
 #include "UI/button.h"
 #include "UI/input_field.h"
 
@@ -22,6 +23,8 @@ int main(void)
     std::string lastExecutedText = "";
     bool hasExecuted = false;
     bool wasFocused = true;
+
+    ConsoleManager::create();
 
     Button button(20, 550, 300, 50, "Test", 30);
     InputField input_field(340, 550, 700, 50, 30);
@@ -46,6 +49,14 @@ int main(void)
 
         wasFocused = isFocused;
 
+        if (IsKeyPressed(KEY_F1)) {
+            if (ConsoleManager::has()) {
+                ConsoleManager::get().setOpen(!ConsoleManager::get().isOpen());
+            }
+        }
+
+        if (ConsoleManager::has() && ConsoleManager::get().isOpen()) ConsoleManager::get().handleInput();
+
         button.Update();
         input_field.Update();
 
@@ -56,8 +67,14 @@ int main(void)
         input_field.Draw();
         GUI_Raylib::DrawEPD();
 
+        if (ConsoleManager::has() && ConsoleManager::get().isOpen()) {
+            ConsoleManager::get().draw();
+        }
+
         EndDrawing();
     }
+    ConsoleManager::destroy();
+
     // De-Initialization
     //--------------------------------------------------------------------------------------
     CloseWindow();        // Close window and OpenGL context

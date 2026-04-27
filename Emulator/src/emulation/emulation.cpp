@@ -27,6 +27,13 @@
 # THE SOFTWARE.
 #
 ******************************************************************************/
+#include "manager/console_manager.h"
+
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#define NOGDI
+#define NOUSER
+
 #include <httplib.h>
 #include <vector>
 
@@ -36,7 +43,7 @@
 
 #include "GUI/gui_raylib.h"
 #include "e-Paper/EPD_5in79g.h"
-#include "e-Paper/command.h"
+#include "e-Paper/paper_command.h"
 
 int simulate_epd_5in79g_test(std::string link) {
 
@@ -79,7 +86,7 @@ int simulate_epd_5in79g_test(std::string link) {
 }
 
 void draw_epd_5in79g_remote(std::string link) {
-    std::vector<command> commands = Request::RequestConfig(link);
+    std::vector<PaperCommand> commands = Request::RequestConfig(link);
 
     for (const auto& command : commands) {
         execute_command(command);
@@ -93,14 +100,14 @@ bool ParseColor(const std::string& color, uint8_t& out) {
         out = colorMap[color];
         return true;
     }
-    std::cout << "invalid color: " << color << "\n";
+    ConsoleManager::get().log(WARNING, "invalid color: " + color);
     return false;
 }
 
-bool GetRequiredArg(const command& cmd, const std::string& key, std::string& out) {
+bool GetRequiredArg(const PaperCommand& cmd, const std::string& key, std::string& out) {
     auto it = cmd.args.find(key);
     if (it == cmd.args.end()) {
-        std::cout << "missing '" << key << "'\n";
+        ConsoleManager::get().log(WARNING, "missing '" + key + "'");
         return false;
     }
     out = it->second;
@@ -112,7 +119,7 @@ bool ParseInt(const std::string& s, int& out) {
         out = std::stoi(s);
         return true;
     } catch (...) {
-        std::cout << "invalid int: " << s << "\n";
+        ConsoleManager::get().log(WARNING, "invalid int: " + s);
         return false;
     }
 }
@@ -123,7 +130,7 @@ bool ParseDotPixel(const std::string& s, DOT_PIXEL& out) {
     else if (s == "3x3") out = DOT_PIXEL_3X3;
     else if (s == "4x4") out = DOT_PIXEL_4X4;
     else {
-        std::cout << "invalid width: " << s << "\n";
+        ConsoleManager::get().log(WARNING, "invalid width: " + s);
         return false;
     }
     return true;
@@ -134,7 +141,7 @@ bool ParseLineStyle(const std::string& s, LINE_STYLE& out) {
         out = lineStyleMap[s];
         return true;
     }
-    std::cout << "invalid line style: " << s << "\n";
+    ConsoleManager::get().log(WARNING, "invalid line style: " + s);
     return false;
 }
 bool ParseDrawFill(const std::string& s, DRAW_FILL& out) {
@@ -142,7 +149,7 @@ bool ParseDrawFill(const std::string& s, DRAW_FILL& out) {
         out = drawFillMap[s];
         return true;
     }
-    std::cout << "invalid fill: " << s << "\n";
+    ConsoleManager::get().log(WARNING, "invalid fill: " + s);
     return false;
 }
 bool ParseDotStyle(const std::string& s, DOT_STYLE& out) {
@@ -150,7 +157,7 @@ bool ParseDotStyle(const std::string& s, DOT_STYLE& out) {
         out = dotStyleMap[s];
         return true;
     }
-    std::cout << "invalid dot style: " << s << "\n";
+    ConsoleManager::get().log(WARNING, "invalid dot style: " + s);
     return false;
 }
 bool ParseFont(const std::string& s, sFONT*& out) {
@@ -158,13 +165,14 @@ bool ParseFont(const std::string& s, sFONT*& out) {
         out = fontMap[s];
         return true;
     }
-    std::cout << "invalid font: " << s << "\n";
+    ConsoleManager::get().log(WARNING, "invalid font: " + s);
+
     return false;
 }
 
 // -------------------- COMMANDS --------------------
 
-void Clear(const command& command) {
+void Clear(const PaperCommand& command) {
     std::string cs;
     if (!GetRequiredArg(command, "color", cs)) return;
 
@@ -174,7 +182,7 @@ void Clear(const command& command) {
     Paint_Clear(color);
 }
 
-void SetRotate(const command& command) {
+void SetRotate(const PaperCommand& command) {
     std::string val;
     if (!GetRequiredArg(command, "rotate", val)) return;
 
@@ -184,17 +192,17 @@ void SetRotate(const command& command) {
     Paint_SetRotate((UWORD)rotate);
 }
 
-void SetMirroring(const command& command) {
+void SetMirroring(const PaperCommand& command) {
     std::string val;
     if (!GetRequiredArg(command, "mirror", val)) return;
 
     int mirror;
     if (!ParseInt(val, mirror)) return;
 
-    Paint_SetMirroring((uint8_t)mirror);
+    Paint_SetMirroring((UBYTE)mirror);
 }
 
-void SetPixel(const command& command) {
+void SetPixel(const PaperCommand& command) {
     std::string xs, ys, cs;
 
     if (!GetRequiredArg(command, "x", xs) ||
@@ -210,7 +218,7 @@ void SetPixel(const command& command) {
     Paint_SetPixel(x, y, color);
 }
 
-void ClearWindow(const command& command) {
+void ClearWindow(const PaperCommand& command) {
     std::string xs, ys, xe, ye, cs;
 
     if (!GetRequiredArg(command, "x_start", xs) ||
@@ -231,7 +239,7 @@ void ClearWindow(const command& command) {
 
 // -------------------- DRAW --------------------
 
-void DrawPoint(const command& command) {
+void DrawPoint(const PaperCommand& command) {
     std::string xs, ys, cs, ws, ss;
 
     if (!GetRequiredArg(command, "x", xs) ||
@@ -254,7 +262,7 @@ void DrawPoint(const command& command) {
     Paint_DrawPoint(x, y, color, width, style);
 }
 
-void DrawLine(const command& command) {
+void DrawLine(const PaperCommand& command) {
     std::string xs, ys, xe, ye, cs, ws, ss;
 
     if (!GetRequiredArg(command, "x_start", xs) ||
@@ -280,7 +288,7 @@ void DrawLine(const command& command) {
     Paint_DrawLine(x1, y1, x2, y2, color, width, style);
 }
 
-void DrawRectangle(const command& command) {
+void DrawRectangle(const PaperCommand& command) {
     std::string xs, ys, xe, ye, cs, ws, fs;
 
     if (!GetRequiredArg(command, "x_start", xs) ||
@@ -306,7 +314,7 @@ void DrawRectangle(const command& command) {
     Paint_DrawRectangle(x1, y1, x2, y2, color, width, fill);
 }
 
-void DrawCircle(const command& command) {
+void DrawCircle(const PaperCommand& command) {
     std::string xs, ys, rs, cs, ws, fs;
 
     if (!GetRequiredArg(command, "x", xs) ||
@@ -332,7 +340,7 @@ void DrawCircle(const command& command) {
 
 // -------------------- TEXT --------------------
 
-void DrawChar(const command& command) {
+void DrawChar(const PaperCommand& command) {
     std::string xs, ys, chs, fg, bg, fs;
 
     if (!GetRequiredArg(command, "x", xs) ||
@@ -355,7 +363,7 @@ void DrawChar(const command& command) {
     Paint_DrawChar(x, y, chs[0], font, fg_c, bg_c);
 }
 
-void DrawNum(const command& command) {
+void DrawNum(const PaperCommand& command) {
     std::string xs, ys, ns, fg, bg, fs;
 
     if (!GetRequiredArg(command, "x", xs) ||
@@ -378,7 +386,7 @@ void DrawNum(const command& command) {
     Paint_DrawNum(x, y, num, font, fg_c, bg_c);
 }
 
-void DrawTime(const command& command) {
+void DrawTime(const PaperCommand& command) {
     std::string xs, ys, hs, ms, ss, fg, bg, fs;
 
     if (!GetRequiredArg(command, "x", xs) ||
@@ -406,7 +414,7 @@ void DrawTime(const command& command) {
     Paint_DrawTime(x, y, &t, font, fg_c, bg_c);
 }
 
-void DrawString(const command& command) {
+void DrawString(const PaperCommand& command) {
     std::string xs, ys, text, fg, bg, fs;
 
     if (!GetRequiredArg(command, "x", xs) ||

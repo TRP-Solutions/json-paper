@@ -7,11 +7,11 @@
 #include <string>
 #include <vector>
 
-struct command;
+struct PaperCommand;
 
 class Request {
 public:
-    static std::vector<command> RequestConfig(std::string addr);
+    static std::vector<PaperCommand> RequestConfig(std::string addr);
 };
 
 

@@ -13,14 +13,14 @@
 #include "e-Paper/EPD_5in79g.h"
 #include "Canvas/GUI_Paint.h"
 
-struct command {
+struct PaperCommand {
     std::string name;
     std::map<std::string, std::string> args;
 };
 
-using CmdHandler = std::function<void(const command&)>;
+using CmdHandler = std::function<void(const PaperCommand&)>;
 
-void execute_command(const command& command);
+void execute_command(const PaperCommand& command);
 
 extern std::unordered_map<std::string, CmdHandler> cmdMap;
 extern std::unordered_map<std::string, uint8_t> colorMap;
