@@ -293,6 +293,17 @@ void Console::handleInput()
     {
         if (key >= 32 && key <= 126)
         {
+            // If text is marked, delete it first
+            if (mSelectionStart != mSelectionEnd)
+            {
+                size_t start = std::min(mSelectionStart, mSelectionEnd);
+                size_t end = std::max(mSelectionStart, mSelectionEnd);
+                mInput.erase(start, end - start);
+                mCursorPos = start;
+                mSelectionStart = mCursorPos;
+                mSelectionEnd = mCursorPos;
+            }
+
             if (mInput.size() < CONSOLE_MAX_INPUT - 1)
             {
                 userEditing = true;
@@ -304,19 +315,105 @@ void Console::handleInput()
                 );
 
                 ++mCursorPos;
+                mSelectionStart = mCursorPos;
+                mSelectionEnd = mCursorPos;
             }
         }
 
         key = GetCharPressed();
     }
 
-    // Backspace
+    // Control key state
     bool ctrlDown =
         IsKeyDown(KEY_LEFT_CONTROL) ||
         IsKeyDown(KEY_RIGHT_CONTROL);
 
+    // Ctrl+A: Select all
+    if (IsKeyPressed(KEY_A) && ctrlDown)
+    {
+        mSelectionStart = 0;
+        mSelectionEnd = mInput.size();
+    }
+
+    // Ctrl+C: Copy (marked text or all)
+    if (IsKeyPressed(KEY_C) && ctrlDown)
+    {
+        std::string textToCopy;
+
+        if (mSelectionStart != mSelectionEnd)
+        {
+            size_t start = std::min(mSelectionStart, mSelectionEnd);
+            size_t end = std::max(mSelectionStart, mSelectionEnd);
+            textToCopy = mInput.substr(start, end - start);
+        }
+        else if (!mInput.empty())
+        {
+            textToCopy = mInput;
+        }
+
+        if (!textToCopy.empty())
+        {
+            SetClipboardText(textToCopy.c_str());
+        }
+    }
+
+    // Ctrl+V: Paste
+    if (IsKeyPressed(KEY_V) && ctrlDown)
+    {
+        const char* clipboardText = GetClipboardText();
+        if (clipboardText != nullptr)
+        {
+            std::string pasteText(clipboardText);
+
+            // Filter out newlines and other control characters
+            pasteText.erase(
+                std::remove_if(pasteText.begin(), pasteText.end(),
+                    [](unsigned char c) { return c < 32 && c != '\t'; }),
+                pasteText.end()
+            );
+
+            // If text is marked, replace it
+            if (mSelectionStart != mSelectionEnd)
+            {
+                size_t start = std::min(mSelectionStart, mSelectionEnd);
+                size_t end = std::max(mSelectionStart, mSelectionEnd);
+                size_t deleteLen = end - start;
+
+                mInput.erase(start, deleteLen);
+                mCursorPos = start;
+                mSelectionStart = start;
+                mSelectionEnd = start;
+            }
+
+            size_t spaceLeft = CONSOLE_MAX_INPUT - 1 - mInput.size();
+            size_t insertLen = std::min(pasteText.size(), spaceLeft);
+
+            if (insertLen > 0)
+            {
+                mInput.insert(mCursorPos, pasteText.substr(0, insertLen));
+                mCursorPos += insertLen;
+                mSelectionStart = mCursorPos;
+                mSelectionEnd = mCursorPos;
+                userEditing = true;
+            }
+        }
+    }
+
+    // Backspace
     auto handleBackspace = [&]()
     {
+        // If text is marked, delete the marked text
+        if (mSelectionStart != mSelectionEnd)
+        {
+            size_t start = std::min(mSelectionStart, mSelectionEnd);
+            size_t end = std::max(mSelectionStart, mSelectionEnd);
+            mInput.erase(start, end - start);
+            mCursorPos = start;
+            mSelectionStart = mCursorPos;
+            mSelectionEnd = mCursorPos;
+            return;
+        }
+
         if (mCursorPos == 0 || mInput.empty())
             return;
 
@@ -353,6 +450,9 @@ void Console::handleInput()
             mInput.erase(mCursorPos - 1, 1);
             --mCursorPos;
         }
+
+        mSelectionStart = mCursorPos;
+        mSelectionEnd = mCursorPos;
     };
 
     if (IsKeyPressed(KEY_BACKSPACE))
@@ -388,6 +488,8 @@ void Console::handleInput()
 
             mInput.clear();
             mCursorPos = 0;
+            mSelectionStart = 0;
+            mSelectionEnd = 0;
             mHistoryOffset = 0;
         }
     }
@@ -405,6 +507,8 @@ void Console::handleInput()
 
             mInput = mHistory[index];
             mCursorPos = mInput.size();
+            mSelectionStart = mCursorPos;
+            mSelectionEnd = mCursorPos;
         }
     }
 
@@ -420,12 +524,16 @@ void Console::handleInput()
 
             mInput = mHistory[index];
             mCursorPos = mInput.size();
+            mSelectionStart = mCursorPos;
+            mSelectionEnd = mCursorPos;
         }
         else
         {
             mHistoryOffset = 0;
             mInput.clear();
             mCursorPos = 0;
+            mSelectionStart = 0;
+            mSelectionEnd = 0;
         }
     }
 
@@ -436,7 +544,13 @@ void Console::handleInput()
         lastArrowRepeat = now;
 
         if (mCursorPos > 0)
+        {
             --mCursorPos;
+        }
+
+        // Clear selection
+        mSelectionStart = mCursorPos;
+        mSelectionEnd = mCursorPos;
     }
     else if (IsKeyDown(KEY_LEFT))
     {
@@ -446,7 +560,13 @@ void Console::handleInput()
             lastArrowRepeat = now;
 
             if (mCursorPos > 0)
+            {
                 --mCursorPos;
+            }
+
+            // Clear selection
+            mSelectionStart = mCursorPos;
+            mSelectionEnd = mCursorPos;
         }
     }
 
@@ -457,7 +577,13 @@ void Console::handleInput()
         lastArrowRepeat = now;
 
         if (mCursorPos < mInput.size())
+        {
             ++mCursorPos;
+        }
+
+        // Clear selection
+        mSelectionStart = mCursorPos;
+        mSelectionEnd = mCursorPos;
     }
     else if (IsKeyDown(KEY_RIGHT))
     {
@@ -467,11 +593,19 @@ void Console::handleInput()
             lastArrowRepeat = now;
 
             if (mCursorPos < mInput.size())
+            {
                 ++mCursorPos;
+            }
+
+            // Clear selection
+            mSelectionStart = mCursorPos;
+            mSelectionEnd = mCursorPos;
         }
     }
 
-    // Cursor blink
+    // Cursor blink - don't blink if text is marked
+    bool isTextMarked = (mSelectionStart != mSelectionEnd);
+
     bool arrowActive =
         IsKeyDown(KEY_LEFT) ||
         IsKeyDown(KEY_RIGHT);
@@ -480,11 +614,14 @@ void Console::handleInput()
         IsKeyDown(KEY_BACKSPACE);
 
     mCursorBlink =
-        !(arrowActive || backspaceActive || userEditing);
+        !(isTextMarked || arrowActive || backspaceActive || userEditing);
 
     // Autocomplete
     if (IsKeyPressed(KEY_TAB))
     {
+        // Clear selection when autocompleting
+        mSelectionStart = mCursorPos;
+        mSelectionEnd = mCursorPos;
         autoComplete();
     }
 

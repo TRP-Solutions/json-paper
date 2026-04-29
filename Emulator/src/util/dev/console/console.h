@@ -65,6 +65,8 @@ private:
     int mHistoryOffset = 0;
     int mScrollOffset = 0;
     int mCursorPos = 0;
+    size_t mSelectionStart = 0;
+    size_t mSelectionEnd = 0;
 
     bool mOpen = false;
     bool mCursorBlink = true;
