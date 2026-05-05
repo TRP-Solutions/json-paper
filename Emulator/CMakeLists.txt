@@ -75,6 +75,7 @@ set(HEADERS
         src/util/dev/console/command/auto_completion.h
         src/util/dev/console/command/commands/core_command.h
         src/manager/console_manager.h
+        src/util/base_64_decode.cpp
 )
 
 set(CMAKE_CXX_STANDARD 20)

@@ -114,6 +114,15 @@ bool GetRequiredArg(const PaperCommand& cmd, const std::string& key, std::string
     return true;
 }
 
+bool GetOptionalArg(const PaperCommand& cmd, const std::string& key, std::string& out) {
+    auto it = cmd.args.find(key);
+    if (it == cmd.args.end()) {
+        return false;
+    }
+    out = it->second;
+    return true;
+}
+
 bool ParseInt(const std::string& s, int& out) {
     try {
         out = std::stoi(s);
@@ -214,6 +223,8 @@ void SetPixel(const PaperCommand& command) {
 
     uint8_t color;
     if (!ParseColor(cs, color)) return;
+
+    ConsoleManager::get().log(WARNING, cs.c_str());
 
     Paint_SetPixel(x, y, color);
 }
@@ -338,6 +349,65 @@ void DrawCircle(const PaperCommand& command) {
     Paint_DrawCircle(x, y, r, color, width, fill);
 }
 
+std::vector<uint8_t> Base64Decode(const std::string & string);
+
+void DrawImage(const PaperCommand& command) {
+    std::string xs, ys, ws, hs, dataStr, transparentStr;
+
+    if (!GetRequiredArg(command, "x", xs) ||
+        !GetRequiredArg(command, "y", ys) ||
+        !GetRequiredArg(command, "width", ws) ||
+        !GetRequiredArg(command, "height", hs) ||
+        !GetRequiredArg(command, "data", dataStr)) return;
+
+    int x, y, width, height;
+    if (!ParseInt(xs, x) || !ParseInt(ys, y) ||
+        !ParseInt(ws, width) || !ParseInt(hs, height)) return;
+
+    int transparent = 4;
+    if (GetOptionalArg(command, "transparent", transparentStr)) {
+        ParseInt(transparentStr, transparent);
+    }
+
+    std::vector<uint8_t> buffer = Base64Decode(dataStr);
+
+    int expected = (width * height + 1) / 2;
+    if ((int)buffer.size() != expected) {
+        ConsoleManager::get().log(WARNING, "Invalid image data size");
+        return;
+    }
+
+    for (int sy = 0; sy < height; sy++) {
+        for (int sx = 0; sx < width; sx++) {
+
+            int index = sy * width + sx;
+            int byteIndex = index / 2;
+
+            uint8_t byte = buffer[byteIndex];
+            uint8_t pixel;
+
+            if ((index % 2) == 0) {
+                // high nibble
+                pixel = (byte >> 4) & 0x0F;
+            } else {
+                // low nibble
+                pixel = byte & 0x0F;
+            }
+
+            if (transparent != -1 && pixel == transparent)
+                continue;
+
+            Paint_DrawPoint(
+                x + sx,
+                y + sy,
+                pixel,
+                DOT_PIXEL_1X1,
+                DOT_STYLE_DFT
+            );
+        }
+    }
+}
+
 // -------------------- TEXT --------------------
 
 void DrawChar(const PaperCommand& command) {
@@ -414,6 +484,57 @@ void DrawTime(const PaperCommand& command) {
     Paint_DrawTime(x, y, &t, font, fg_c, bg_c);
 }
 
+
+void Paint_DrawChar_Transparent(UWORD Xstart, UWORD Ystart, const char Acsii_Char,
+                               sFONT* Font, UWORD Color_Foreground)
+{
+    UWORD Page, Column;
+
+    const uint8_t *ptr = &Font->table[(Acsii_Char - ' ') * Font->Height * ((Font->Width + 7) / 8)];
+
+    for (Page = 0; Page < Font->Height; Page++) {
+        for (Column = 0; Column < Font->Width; Column++) {
+
+            if (ptr[Column / 8] & (0x80 >> (Column % 8))) {
+                Paint_SetPixel(Xstart + Column, Ystart + Page, Color_Foreground);
+            }
+
+        }
+        ptr += (Font->Width + 7) / 8;
+    }
+}
+
+void Paint_DrawString_EN_Transparent(UWORD Xstart, UWORD Ystart, const char *pString,
+                                     sFONT* Font, UWORD Color_Foreground)
+{
+    UWORD Xpoint = Xstart;
+    UWORD Ypoint = Ystart;
+
+    if (Xstart > Paint.Width || Ystart > Paint.Height) {
+        Debug("Paint_DrawString_EN_Transparent out of range\r\n");
+        return;
+    }
+
+    while (*pString != '\0') {
+
+        if ((Xpoint + Font->Width) > Paint.Width) {
+            Xpoint = Xstart;
+            Ypoint += Font->Height;
+        }
+
+        if ((Ypoint + Font->Height) > Paint.Height) {
+            Xpoint = Xstart;
+            Ypoint = Ystart;
+        }
+
+        // Draw character WITHOUT background
+        Paint_DrawChar_Transparent(Xpoint, Ypoint, *pString, Font, Color_Foreground);
+
+        pString++;
+        Xpoint += Font->Width;
+    }
+}
+
 void DrawString(const PaperCommand& command) {
     std::string xs, ys, text, fg, bg, fs;
 
@@ -427,12 +548,20 @@ void DrawString(const PaperCommand& command) {
     int x, y;
     if (!ParseInt(xs, x) || !ParseInt(ys, y)) return;
 
-    uint8_t fg_c, bg_c;
+    uint8_t fg_c;
     sFONT* font;
 
     if (!ParseColor(fg, fg_c) ||
-        !ParseColor(bg, bg_c) ||
         !ParseFont(fs, font)) return;
+
+    if (bg == "transparent") {
+        Paint_DrawString_EN_Transparent(x, y, text.c_str(), font, fg_c);
+        return;
+    }
+
+    uint8_t bg_c;
+    if (!ParseColor(bg, bg_c)) return;
 
     Paint_DrawString_EN(x, y, text.c_str(), font, fg_c, bg_c);
 }
+

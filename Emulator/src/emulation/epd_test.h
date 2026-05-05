@@ -56,6 +56,7 @@ void DrawPoint(const PaperCommand& command);
 void DrawLine(const PaperCommand& command);
 void DrawRectangle(const PaperCommand& command);
 void DrawCircle(const PaperCommand& command);
+void DrawImage(const PaperCommand& command);
 
 // Text (high-level)
 void DrawString(const PaperCommand& command);
