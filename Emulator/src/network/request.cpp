@@ -84,6 +84,12 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
 
         return commands;
     } catch (const std::exception& e) {
+        // std::string err = std::string("JSON error:\n") + e.what();
+        // ConsoleManager::get().log(FATAL, err.c_str());
+        //
+        // std::string response = std::string("Response:\n") + res->body;
+        // ConsoleManager::get().log(FATAL, response.c_str());
+
         std::cerr << "JSON error: " << e.what() << std::endl;
         std::cerr << "Response:\n" << res->body << std::endl;
         return {};

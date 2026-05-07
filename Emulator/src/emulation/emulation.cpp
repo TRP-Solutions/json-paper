@@ -183,7 +183,10 @@ bool ParseFont(const std::string& s, sFONT*& out) {
 
 void Clear(const PaperCommand& command) {
     std::string cs;
-    if (!GetRequiredArg(command, "color", cs)) return;
+    if (!GetRequiredArg(command, "color", cs))  {
+        ConsoleManager::get().log(WARNING, "Missing required args for 'clear'");
+        return;
+    }
 
     uint8_t color;
     if (!ParseColor(cs, color)) return;
@@ -193,7 +196,10 @@ void Clear(const PaperCommand& command) {
 
 void SetRotate(const PaperCommand& command) {
     std::string val;
-    if (!GetRequiredArg(command, "rotate", val)) return;
+    if (!GetRequiredArg(command, "rotate", val))  {
+        ConsoleManager::get().log(WARNING, "Missing required args for 'set_rotate'");
+        return;
+    }
 
     int rotate;
     if (!ParseInt(val, rotate)) return;
@@ -203,7 +209,10 @@ void SetRotate(const PaperCommand& command) {
 
 void SetMirroring(const PaperCommand& command) {
     std::string val;
-    if (!GetRequiredArg(command, "mirror", val)) return;
+    if (!GetRequiredArg(command, "mirror", val))  {
+        ConsoleManager::get().log(WARNING, "Missing required args for 'set_mirroring'");
+        return;
+    }
 
     int mirror;
     if (!ParseInt(val, mirror)) return;
@@ -216,7 +225,10 @@ void SetPixel(const PaperCommand& command) {
 
     if (!GetRequiredArg(command, "x", xs) ||
         !GetRequiredArg(command, "y", ys) ||
-        !GetRequiredArg(command, "color", cs)) return;
+        !GetRequiredArg(command, "color", cs)) {
+            ConsoleManager::get().log(WARNING, "Missing required args for 'set_pixel'");
+            return;
+        }
 
     int x, y;
     if (!ParseInt(xs, x) || !ParseInt(ys, y)) return;
@@ -236,7 +248,10 @@ void ClearWindow(const PaperCommand& command) {
         !GetRequiredArg(command, "y_start", ys) ||
         !GetRequiredArg(command, "x_end", xe) ||
         !GetRequiredArg(command, "y_end", ye) ||
-        !GetRequiredArg(command, "color", cs)) return;
+        !GetRequiredArg(command, "color", cs)) {
+            ConsoleManager::get().log(WARNING, "Missing required args for 'clear_window'");
+            return;
+        }
 
     int x1, y1, x2, y2;
     if (!ParseInt(xs, x1) || !ParseInt(ys, y1) ||
@@ -244,6 +259,18 @@ void ClearWindow(const PaperCommand& command) {
 
     uint8_t color;
     if (!ParseColor(cs, color)) return;
+
+    if (x1 < 0 || y1 < 0 ||
+        x2 < 0 || y2 < 0 ||
+        x1 >= Paint.Width || y1 >= Paint.Height ||
+        x2 >= Paint.Width || y2 >= Paint.Height) {
+
+        ConsoleManager::get().log(
+            WARNING,
+            "Input exceeds the normal display range for 'clear_window'"
+        );
+        return;
+    }
 
     Paint_ClearWindows(x1, y1, x2, y2, color);
 }
@@ -257,7 +284,10 @@ void DrawPoint(const PaperCommand& command) {
         !GetRequiredArg(command, "y", ys) ||
         !GetRequiredArg(command, "color", cs) ||
         !GetRequiredArg(command, "width", ws) ||
-        !GetRequiredArg(command, "style", ss)) return;
+        !GetRequiredArg(command, "style", ss)) {
+            ConsoleManager::get().log(WARNING, "Missing required args for 'draw_point'");
+            return;
+        }
 
     int x, y;
     if (!ParseInt(xs, x) || !ParseInt(ys, y)) return;
@@ -270,6 +300,11 @@ void DrawPoint(const PaperCommand& command) {
         !ParseDotPixel(ws, width) ||
         !ParseDotStyle(ss, style)) return;
 
+    if (x < 0 || y < 0 ||
+        x > Paint.Width || y > Paint.Height) {
+        ConsoleManager::get().log(WARNING, "Input exceeds the normal display range for 'draw_point'");
+        return;
+    }
     Paint_DrawPoint(x, y, color, width, style);
 }
 
@@ -282,7 +317,10 @@ void DrawLine(const PaperCommand& command) {
         !GetRequiredArg(command, "y_end", ye) ||
         !GetRequiredArg(command, "color", cs) ||
         !GetRequiredArg(command, "width", ws) ||
-        !GetRequiredArg(command, "style", ss)) return;
+        !GetRequiredArg(command, "style", ss)) {
+            ConsoleManager::get().log(WARNING, "Missing required args for 'draw_line'");
+            return;
+        }
 
     int x1, y1, x2, y2;
     if (!ParseInt(xs, x1) || !ParseInt(ys, y1) ||
@@ -296,6 +334,18 @@ void DrawLine(const PaperCommand& command) {
         !ParseDotPixel(ws, width) ||
         !ParseLineStyle(ss, style)) return;
 
+    if (x1 < 0 || y1 < 0 ||
+    x2 < 0 || y2 < 0 ||
+    x1 >= Paint.Width || y1 >= Paint.Height ||
+    x2 >= Paint.Width || y2 >= Paint.Height) {
+
+        ConsoleManager::get().log(
+            WARNING,
+            "Input exceeds the normal display range for 'draw_line'"
+        );
+        return;
+    }
+
     Paint_DrawLine(x1, y1, x2, y2, color, width, style);
 }
 
@@ -308,7 +358,10 @@ void DrawRectangle(const PaperCommand& command) {
         !GetRequiredArg(command, "y_end", ye) ||
         !GetRequiredArg(command, "color", cs) ||
         !GetRequiredArg(command, "width", ws) ||
-        !GetRequiredArg(command, "fill", fs)) return;
+        !GetRequiredArg(command, "fill", fs)) {
+            ConsoleManager::get().log(WARNING, "Missing required args for 'draw_rectangle'");
+            return;
+        }
 
     int x1, y1, x2, y2;
     if (!ParseInt(xs, x1) || !ParseInt(ys, y1) ||
@@ -322,6 +375,17 @@ void DrawRectangle(const PaperCommand& command) {
         !ParseDotPixel(ws, width) ||
         !ParseDrawFill(fs, fill)) return;
 
+    if (x1 < 0 || y1 < 0 ||
+        x2 < 0 || y2 < 0 ||
+        x1 >= Paint.Width || y1 >= Paint.Height ||
+        x2 >= Paint.Width || y2 >= Paint.Height) {
+
+        ConsoleManager::get().log(
+            WARNING,
+            "Input exceeds the normal display range for 'draw_rectangle'"
+        );
+        return;
+    }
     Paint_DrawRectangle(x1, y1, x2, y2, color, width, fill);
 }
 
@@ -333,7 +397,10 @@ void DrawCircle(const PaperCommand& command) {
         !GetRequiredArg(command, "radius", rs) ||
         !GetRequiredArg(command, "color", cs) ||
         !GetRequiredArg(command, "width", ws) ||
-        !GetRequiredArg(command, "fill", fs)) return;
+        !GetRequiredArg(command, "fill", fs)) {
+            ConsoleManager::get().log(WARNING, "Missing required args for 'draw_circle'");
+            return;
+        }
 
     int x, y, r;
     if (!ParseInt(xs, x) || !ParseInt(ys, y) || !ParseInt(rs, r)) return;
@@ -345,6 +412,19 @@ void DrawCircle(const PaperCommand& command) {
     if (!ParseColor(cs, color) ||
         !ParseDotPixel(ws, width) ||
         !ParseDrawFill(fs, fill)) return;
+
+    if (r < 0 ||
+    x - r < 0 ||
+    y - r < 0 ||
+    x + r >= Paint.Width ||
+    y + r >= Paint.Height) {
+
+        ConsoleManager::get().log(
+            WARNING,
+            "Input exceeds the normal display range for 'draw_circle'"
+        );
+        return;
+    }
 
     Paint_DrawCircle(x, y, r, color, width, fill);
 }
@@ -358,7 +438,10 @@ void DrawImage(const PaperCommand& command) {
         !GetRequiredArg(command, "y", ys) ||
         !GetRequiredArg(command, "width", ws) ||
         !GetRequiredArg(command, "height", hs) ||
-        !GetRequiredArg(command, "data", dataStr)) return;
+        !GetRequiredArg(command, "data", dataStr)) {
+            ConsoleManager::get().log(WARNING, "Missing required args for 'draw_image'");
+            return;
+    }
 
     int x, y, width, height;
     if (!ParseInt(xs, x) || !ParseInt(ys, y) ||
@@ -397,6 +480,15 @@ void DrawImage(const PaperCommand& command) {
             if (transparent != -1 && pixel == transparent)
                 continue;
 
+            if (x < 0 || y < 0 ||
+            width <= 0 || height <= 0) {
+                ConsoleManager::get().log(
+                    WARNING,
+                    "Input exceeds the normal display range for 'draw_image'"
+                );
+                return;
+            }
+
             Paint_DrawPoint(
                 x + sx,
                 y + sy,
@@ -418,7 +510,10 @@ void DrawChar(const PaperCommand& command) {
         !GetRequiredArg(command, "char", chs) ||
         !GetRequiredArg(command, "foreground", fg) ||
         !GetRequiredArg(command, "background", bg) ||
-        !GetRequiredArg(command, "font", fs)) return;
+        !GetRequiredArg(command, "font", fs)) {
+            ConsoleManager::get().log(WARNING, "Missing required args for 'draw_char'");
+            return;
+        }
 
     int x, y;
     if (!ParseInt(xs, x) || !ParseInt(ys, y)) return;
@@ -429,6 +524,17 @@ void DrawChar(const PaperCommand& command) {
     if (!ParseColor(fg, fg_c) ||
         !ParseColor(bg, bg_c) ||
         !ParseFont(fs, font)) return;
+
+    if (x < 0 || y < 0 ||
+        x >= Paint.Width ||
+        y >= Paint.Height) {
+
+        ConsoleManager::get().log(
+            WARNING,
+            "Input exceeds the normal display range for 'draw_char'"
+        );
+        return;
+    }
 
     Paint_DrawChar(x, y, chs[0], font, fg_c, bg_c);
 }
@@ -441,7 +547,10 @@ void DrawNum(const PaperCommand& command) {
         !GetRequiredArg(command, "num", ns) ||
         !GetRequiredArg(command, "foreground", fg) ||
         !GetRequiredArg(command, "background", bg) ||
-        !GetRequiredArg(command, "font", fs)) return;
+        !GetRequiredArg(command, "font", fs))  {
+        ConsoleManager::get().log(WARNING, "Missing required args for 'draw_num'");
+        return;
+        }
 
     int x, y, num;
     if (!ParseInt(xs, x) || !ParseInt(ys, y) || !ParseInt(ns, num)) return;
@@ -453,6 +562,16 @@ void DrawNum(const PaperCommand& command) {
         !ParseColor(bg, bg_c) ||
         !ParseFont(fs, font)) return;
 
+    if (x < 0 || y < 0 ||
+        x >= Paint.Width ||
+        y >= Paint.Height) {
+
+        ConsoleManager::get().log(
+            WARNING,
+            "Input exceeds the normal display range for 'draw_num'"
+        );
+        return;
+    }
     Paint_DrawNum(x, y, num, font, fg_c, bg_c);
 }
 
@@ -466,7 +585,10 @@ void DrawTime(const PaperCommand& command) {
         !GetRequiredArg(command, "sec", ss) ||
         !GetRequiredArg(command, "foreground", fg) ||
         !GetRequiredArg(command, "background", bg) ||
-        !GetRequiredArg(command, "font", fs)) return;
+        !GetRequiredArg(command, "font", fs)) {
+            ConsoleManager::get().log(WARNING, "Missing required args for 'draw_time'");
+            return;
+        }
 
     int x, y, h, m, s;
     if (!ParseInt(xs, x) || !ParseInt(ys, y) ||
@@ -481,6 +603,16 @@ void DrawTime(const PaperCommand& command) {
 
     PAINT_TIME t{(UBYTE)h, (UBYTE)m, (UBYTE)s};
 
+    if (x < 0 || y < 0 ||
+        x >= Paint.Width ||
+        y >= Paint.Height) {
+
+        ConsoleManager::get().log(
+            WARNING,
+            "Input exceeds the normal display range for 'draw_time'"
+        );
+        return;
+    }
     Paint_DrawTime(x, y, &t, font, fg_c, bg_c);
 }
 
@@ -543,7 +675,10 @@ void DrawString(const PaperCommand& command) {
         !GetRequiredArg(command, "text", text) ||
         !GetRequiredArg(command, "foreground", fg) ||
         !GetRequiredArg(command, "background", bg) ||
-        !GetRequiredArg(command, "font", fs)) return;
+        !GetRequiredArg(command, "font", fs))  {
+            ConsoleManager::get().log(WARNING, "Missing required args for 'draw_string'");
+            return;
+        }
 
     int x, y;
     if (!ParseInt(xs, x) || !ParseInt(ys, y)) return;
@@ -553,6 +688,17 @@ void DrawString(const PaperCommand& command) {
 
     if (!ParseColor(fg, fg_c) ||
         !ParseFont(fs, font)) return;
+
+    if (x < 0 || y < 0 ||
+    x + font->Width > Paint.Width ||
+    y + font->Height > Paint.Height) {
+
+        ConsoleManager::get().log(
+            WARNING,
+            "Input exceeds the normal display range for 'draw_string'"
+        );
+        return;
+    }
 
     if (bg == "transparent") {
         Paint_DrawString_EN_Transparent(x, y, text.c_str(), font, fg_c);
