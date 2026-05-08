@@ -47,7 +47,7 @@ set(SOURCES
         src/gui/gui_raylib.cpp
 
         ${ARDUINO_DIR}/src/core/core.cpp
-        ${ARDUINO_DIR}/src/canvas/GUI_Paint.cpp
+        ${ARDUINO_DIR}/src/canvas/gui_paint.cpp
         ${ARDUINO_DIR}/src/font/font8.cpp
         ${ARDUINO_DIR}/src/font/font12.cpp
         ${ARDUINO_DIR}/src/font/font16.cpp
