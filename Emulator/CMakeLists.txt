@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 4.0)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_DEBUG=0")
+add_compile_definitions(_GLIBCXX_DEBUG=0)
+
 project(e_paper_emulator)
 
 include(FetchContent)
@@ -78,6 +82,20 @@ set(HEADERS
         ${ARDUINO_DIR}/src/canvas/gui_paint.h
         src/simulate/simulate.cpp
         src/simulate/simulate.h
+        ../Arduino/src/core/command/clear.cpp
+        ../Arduino/src/core/command/set_rotate.cpp
+        ../Arduino/src/core/command/set_mirroring.cpp
+        ../Arduino/src/core/command/set_pixel.cpp
+        ../Arduino/src/core/command/clear_window.cpp
+        ../Arduino/src/core/command/draw_point.cpp
+        ../Arduino/src/core/command/draw_line.cpp
+        ../Arduino/src/core/command/draw_rectangle.cpp
+        ../Arduino/src/core/command/draw_circle.cpp
+        ../Arduino/src/core/command/draw_image.cpp
+        ../Arduino/src/core/command/draw_char.cpp
+        ../Arduino/src/core/command/draw_num.cpp
+        ../Arduino/src/core/command/draw_time.cpp
+        ../Arduino/src/core/command/draw_string.cpp
 )
 
 set(CMAKE_CXX_STANDARD 20)
