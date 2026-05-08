@@ -63,4 +63,14 @@ void DrawString(const PaperCommand& command);
 void DrawChar(const PaperCommand& command);
 void DrawNum(const PaperCommand& command);
 void DrawTime(const PaperCommand& command);
+
+bool ParseColor(const std::string& color, uint8_t& out);
+bool GetRequiredArg(const PaperCommand& cmd, const std::string& key, std::string& out);
+bool GetOptionalArg(const PaperCommand& cmd, const std::string& key, std::string& out);
+bool ParseInt(const std::string& s, int& out);
+bool ParseDotPixel(const std::string& s, DOT_PIXEL& out);
+bool ParseLineStyle(const std::string& s, LINE_STYLE& out);
+bool ParseDrawFill(const std::string& s, DRAW_FILL& out);
+bool ParseDotStyle(const std::string& s, DOT_STYLE& out);
+bool ParseFont(const std::string& s, sFONT*& out);
 #endif

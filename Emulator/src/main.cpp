@@ -1,9 +1,12 @@
 #include "core/core.h"
+#include "simulate/simulate.h"
+#undef WHITE
+#undef BLACK
+#undef RED
+
 #include "raylib.h"
-#include "e-paper/epd_5in79g.h"
 #include "gui/gui_raylib.h"
 #include "manager/console_manager.h"
-#include "simulate/simulate.h"
 #include "ui/button.h"
 #include "ui/input_field.h"
 

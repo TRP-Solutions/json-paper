@@ -55,6 +55,8 @@ set(SOURCES
         ${ARDUINO_DIR}/src/font/font24.cpp
         ${ARDUINO_DIR}/src/e-paper/paper_command.cpp
         ${ARDUINO_DIR}/src/util/base_64_decode.cpp
+        ${ARDUINO_DIR}/src/core/command/helper.cpp
+
 
 )
 set(HEADERS
