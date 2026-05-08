@@ -1,0 +1,538 @@
+#include "WiFiS3.h"
+#include <EEPROM.h>
+#include "arduino_secrets.h"
+#include <ArduinoJson.h>
+#include <vector>
+using std::vector;
+
+struct PaperCommand {
+  String cmd;
+  JsonObject args;
+};
+
+vector<PaperCommand> ParseJson(String jsonString);
+
+WiFiClient httpClient;
+WiFiSSLClient httpsClient;
+
+// polymorf pointer
+WiFiClient* client;
+
+char ssid[] = SECRET_SSID;
+char pass[] = SECRET_PASS;
+
+int led = LED_BUILTIN;
+int status = WL_IDLE_STATUS;
+WiFiServer server(80);
+
+int port = 0;
+String protocol = "";
+
+String response = "";
+
+String getEerom = "";
+
+String ssidAP = "";
+String passAP = "";
+
+String ssidName = "ssidInput";
+String passName = "passInput";
+
+String ssidVal = "value='trp-intern' ";
+String passVal = "value='#NETselect_1575#' ";
+
+// String ssidVal = "value='CL E+F' ";
+// String passVal = "value='ContainerSpinderi2020' ";
+
+bool isSaved = false;
+bool connectFail = false;
+
+bool configMode = false;
+bool canClickBtn = true;
+
+// Button
+#define BUTTON_PIN 12  // The Arduino UNO R4 pin connected to the button
+int newBtnState;    // the current state of button
+int prevBtnState;
+
+
+void setup() {
+  // initialize serial communication at 9600 bits per second:
+  Serial.begin(9600);
+
+  // set the LED pin mode
+  pinMode(led, OUTPUT);
+
+  // initialize the pushbutton pin as a pull-up input
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  prevBtnState = digitalRead(BUTTON_PIN);
+}
+
+
+void loop() {
+  if (status == WL_CONNECTED && response == "") {
+    response = RequestConfig("http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/");
+    vector<PaperCommand> commands = ParseJson(response);
+  }
+
+  if (canClickBtn) ButtonClick();
+  if (!canClickBtn && !configMode && status != WL_CONNECTED && (!connectFail || isSaved)) WiFiConnect();
+  if (configMode) APConnect();
+  if (configMode && !isSaved) updateLED();
+}
+
+void ButtonClick() {
+  // read the state of the switch/button:
+  newBtnState = digitalRead(BUTTON_PIN);
+
+  if (prevBtnState == LOW && newBtnState == HIGH){
+    Serial.println("The button is released");
+    configMode = true;
+    isSaved = false;
+    WiFi.disconnect();
+  }
+
+  if (prevBtnState != newBtnState || prevBtnState == HIGH){
+    canClickBtn = false;
+  }
+}
+
+void updateLED() {
+  // Fejl → konstant tændt
+  if (connectFail) {
+    digitalWrite(led, HIGH);
+    return;
+  }
+
+  // Connected → slukket
+  if (status == WL_CONNECTED) {
+    digitalWrite(led, LOW);
+    return;
+  }
+  
+  // Blink (AP + connecting)
+    digitalWrite(led, HIGH);
+    delay(1000);
+    digitalWrite(led, LOW);
+    delay(1000);
+}
+
+void APConnect() {
+
+  digitalWrite(led, LOW);
+  
+  if (status != WL_AP_LISTENING) {
+      //Initialize serial and wait for port to open:
+    Serial.begin(9600);
+    while (!Serial) {
+      ; // wait for serial port to connect. Needed for native USB port only
+    }
+
+    Serial.println("Start Access Point Web Server");
+
+    // check for the WiFi module:
+    if (WiFi.status() == WL_NO_MODULE) {
+      Serial.println("Communication with WiFi module failed!");
+      // don't continue
+      while (true);
+    }
+
+    String fv = WiFi.firmwareVersion();
+    if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
+      Serial.println("Please upgrade the firmware");
+    }
+
+    // Override IP address
+    WiFi.config(IPAddress(192,48,56,2));
+
+    // print the SSID (SSID);
+    Serial.println("Creating access point...");
+
+    // Create open network. Change this line if you want to create an WEP network:
+    status = WiFi.beginAP(ssid, pass);
+    if (status != WL_AP_LISTENING) {
+      Serial.println("Creating access point failed");
+      // don't continue
+      while (true);
+    }
+
+    delay(1000);
+
+    // start the web server on port 80
+    server.begin();
+
+    // you're connected now, so print out the status
+    printWiFiStatus();
+  }
+
+
+  WiFiClient client = server.available();
+
+  if (client) {
+    Serial.println("new client");
+    String currentLine = "";
+    int contentLength = 0;
+    bool isPost = false;
+
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        currentLine += c;
+
+        if (c == '\n') {
+
+          // POST
+          if (currentLine.startsWith("POST /")) {
+            isPost = true;
+          }
+
+          // Content-Length
+          if (currentLine.startsWith("Content-Length:")) {
+            contentLength = currentLine.substring(15).toInt();
+          }
+
+          if (currentLine == "\r\n") {
+
+
+            if (isPost && contentLength > 0) {
+              String body = "";
+
+              while (body.length() < contentLength) {
+                if (client.available()) {
+                  char c = client.read();
+                  body += c;
+                }
+              }
+
+            int pos1 = body.indexOf(ssidName + "=");
+            int pos2 = body.indexOf("&" + passName + "=");
+
+            if (pos1 != -1 && pos2 != -1 && pos2 > pos1 + ssidName.length() + 1) {
+                Serial.print("BODY: ");
+                Serial.println(urlDecode(body));
+
+                clearEEPROM();
+                saveEEPROM(body);
+                
+                isSaved = true;
+              }
+            }
+            getEerom = readEEPROM();
+
+            int pos1 = getEerom.indexOf(ssidName + "=");
+            int pos2 = getEerom.indexOf("&" + passName + "=");
+
+            if (pos1 != -1 && pos2 != -1 && pos2 > pos1 + ssidName.length() + 1) {
+              ssidAP = urlDecode(getEerom.substring(pos1 + ssidName.length() + 1, pos2));
+              passAP = urlDecode(getEerom.substring(pos2 + passName.length() + 2));
+            }
+
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-type:text/html");
+            client.println();
+
+            client.println("<body style='background:#1f272a;color:white;'>");
+            client.println("<h1>JSON-Paper Webserver</h1>");
+
+            if (!isSaved){
+              client.println("<form method='POST' action='/'>");
+              client.println("<input type='text' name='" + ssidName + "' placeholder='SSID' " + ssidVal + "required>");
+              client.println("<input type='text' name='" + passName + "' placeholder='Password' " + passVal + "required>");
+              client.println("<br>");
+              client.println("<input type='submit' value='Connect'>");
+              client.println("</form>");
+            }else{
+              client.println("<h3>Trying to connect to WiFi...</h3>");
+              client.println("<ul>");
+              client.println("<li>SSID: " + ssidAP + "</li>");
+              String hidePassAP = "";
+              for (int i = 0; i < passAP.length(); i++) {
+                  hidePassAP += "*";
+              }
+              client.println("<li>Password: " + hidePassAP + "</li>");
+              client.println("</ul>");
+              client.println("<br>");
+              client.println("<p><i>No orange light = Connected</i></p>");
+              client.println("<p><i>Orange light = Not connected</i></p>");
+              configMode = false;
+            }
+
+
+            client.println("</body>");
+            client.println();
+            break;
+          }
+
+          currentLine = "";
+        }
+      }
+    }
+
+    client.stop();
+    Serial.println("client disconnected");
+  }
+}
+
+
+
+void WiFiConnect() {
+
+ digitalWrite(led, LOW);
+  if (status != WL_CONNECTED) {
+    WiFi.disconnect();
+    delay(1000);
+  }
+
+  getEerom = readEEPROM();
+  int pos1 = getEerom.indexOf(ssidName + "=");
+  int pos2 = getEerom.indexOf("&" + passName + "=");
+
+  if (pos1 != -1 && pos2 != -1 && pos2 > pos1 + ssidName.length() + 1) {
+    ssidAP = urlDecode(getEerom.substring(pos1 + ssidName.length() + 1, pos2));
+    passAP = urlDecode(getEerom.substring(pos2 + passName.length() + 2));
+  }
+  
+  if (!isSaved) Serial.print("\n");
+  // attempt to connect to WiFi network:
+  Serial.println("Trying to connect to WiFi...");
+  Serial.println("   • SSID: " + ssidAP);
+  String hidePassAP = "";
+  for (int i = 0; i < passAP.length(); i++) {
+      hidePassAP += "*";
+  }
+  Serial.println("   • Password: " + hidePassAP);
+
+  WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
+  // Connect to WPA/WPA2 network:
+  status = WiFi.begin(ssidAP.c_str(), passAP.c_str());
+
+  delay(1000);
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("✓ Connected");
+    while(WiFi.localIP() == "0.0.0.0");
+    Serial.print("   • IP: ");
+    Serial.println(WiFi.localIP());
+    connectFail = false;
+  } else {
+    Serial.println("✗ Error no connection");
+    connectFail = true;
+  }
+  isSaved = false;
+  updateLED();
+}
+
+void printWiFiStatus() {
+  // print the SSID of the network you're attached to:
+  Serial.print("   • SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print your WiFi shield's IP address:
+  Serial.print("   • IP: ");
+  IPAddress ip = WiFi.localIP();
+  Serial.println(ip);
+
+  // print where to go in a browser:
+  Serial.print("Open webserver website: http://");
+  Serial.println(ip);
+}
+
+void clearEEPROM() {
+  for (int i = 0; i < EEPROM.length(); i++) {
+    EEPROM.write(i, '\0');
+  }
+}
+
+void saveEEPROM(String value) {
+  for (int i = 0; i < value.length(); i++) {
+    EEPROM.write(i, value[i]);
+  }
+  EEPROM.write(value.length(), '\0'); // afslut string
+}
+
+String readEEPROM()
+{
+  char data[100];
+
+  for (int i = 0; i < 100; i++)
+  {
+    data[i] = EEPROM.read(i);
+    if (data[i] == '\0') break;
+  }
+
+  return String(data);
+}
+
+
+
+String urlDecode(String input) {
+  String output = "";
+  
+  for (int i = 0; i < input.length(); i++) {
+    if (input[i] == '%') {
+      String hex = input.substring(i + 1, i + 3);
+      char decodedChar = (char) strtol(hex.c_str(), NULL, 16);
+      output += decodedChar;
+      i += 2;
+    }
+    else if (input[i] == '+') {
+      output += ' ';
+    }
+    else {
+      output += input[i];
+    }
+  }
+  
+  return output;
+}
+
+
+// Request
+String RequestConfig(String addr) {
+
+  String path;
+  String host = NormalizeHost(addr, path);
+
+  Serial.println("HOST: " + host);
+  Serial.println("PATH: " + path);
+
+  String body;
+
+  Serial.println("→ Using " + protocol + " (" + port + ")");
+
+  body = httpGet(host, path);
+
+  if (body.length() == 0) {
+    Serial.println("Empty response");
+    return "";
+  }
+  
+  Serial.println("Raw response:");
+  Serial.println(body);
+
+  return body;
+}
+
+// Http
+String httpGet(String host, String path) {
+
+  String response = "";
+
+  Serial.println(protocol + " connecting...");
+
+  if (client->connect(host.c_str(), port)) {
+
+    Serial.println(protocol + " OK");
+
+    client->print("GET ");
+    client->print(path);
+    client->println(" HTTP/1.1");
+
+    client->print("Host: ");
+    client->println(host);
+
+    client->println("Connection: close");
+    client->println();
+
+    bool headerEnded = false;
+
+    while (client->connected() || client->available()) {
+
+      String line = client->readStringUntil('\n');
+
+      if (line == "\r") {
+        headerEnded = true;
+        continue;
+      }
+
+      if (headerEnded) {
+        response += line;
+      }
+    }
+
+    client->stop();
+
+  } else {
+    Serial.println(protocol + " connection failed");
+  }
+
+  return response;
+}
+
+
+
+// Url parser
+String NormalizeHost(String addr, String &path) {
+  path = "/";
+
+  if (addr.startsWith("https://")) {
+    addr = addr.substring(8);
+    protocol = "HTTPS";
+    port = 443;
+    client = &httpsClient;
+  }
+  else if (addr.startsWith("http://")) {
+    addr = addr.substring(7);
+    protocol = "HTTP";
+    port = 80;
+    client = &httpClient;
+  }
+
+  int slashPos = addr.indexOf('/');
+
+  if (slashPos != -1) {
+    path = addr.substring(slashPos);
+    addr = addr.substring(0, slashPos);
+  }
+
+  return addr;
+}
+
+
+// JSON parser
+vector<PaperCommand> ParseJson(String jsonString) {
+
+  static JsonDocument doc;
+
+  vector<PaperCommand> commands;
+
+  DeserializationError error = deserializeJson(doc, jsonString);
+
+  if (error) {
+
+    Serial.print("JSON parse failed: ");
+    Serial.println(error.c_str());
+
+    return commands;
+  }
+
+  JsonArray jsonCommands = doc["commands"];
+  int countCmd = 1;
+  for (JsonObject jsonCmd : jsonCommands) {
+
+    PaperCommand command;
+
+    command.cmd = jsonCmd["cmd"].as<String>();
+    command.args = jsonCmd["args"];
+
+    Serial.println("#" + String(countCmd) + " CMD:");
+    
+    Serial.print("   • ");
+    Serial.println(command.cmd);
+    countCmd++;
+    
+    for (JsonPair kv : command.args) {
+
+      Serial.print("      ");
+      Serial.print(kv.key().c_str());
+      Serial.print(" = ");
+      Serial.println(kv.value().as<String>());
+    }
+
+    commands.push_back(command);
+  }
+
+  return commands;
+}
+
+
