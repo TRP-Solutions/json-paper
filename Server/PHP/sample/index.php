@@ -63,7 +63,7 @@ $display
 	->image(
 		320,
 		20,
-		__DIR__."/logo.svg",
+		__DIR__.'/../../../Media/logo.svg',
 		100,
 		100,
 		Color::TRANSPARENT
