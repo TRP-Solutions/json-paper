@@ -25,7 +25,7 @@ int main(void)
     SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
 
-    std::string lastExecutedText = "";
+    std::string lastExecutedText;
     bool hasExecuted = false;
     bool wasFocused = true;
 
