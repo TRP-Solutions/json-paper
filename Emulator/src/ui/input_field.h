@@ -40,15 +40,15 @@ private:
     int cursorPos = 0;
     double cursorBlinkTimer = 0.0;
     bool cursorVisible = true;
-    static constexpr double cursorBlinkSpeed = 0.5;
+    double cursorBlinkSpeed = 0.5;
 
     // Selection
     int selectionStart = 0;
     int selectionEnd = 0;
 
     // Key repeat
-    static constexpr double repeatDelay = 0.30;
-    static constexpr double repeatRate = 0.05;
+    double repeatDelay = 0.30;
+    double repeatRate = 0.05;
     double backspaceStart = 0.0;
     double lastBackspaceRepeat = 0.0;
     double arrowStart = 0.0;
