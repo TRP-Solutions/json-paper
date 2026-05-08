@@ -31,8 +31,7 @@
 #ifndef _EPD_5in79G_h_
 #define _EPD_5in79G_h_
 
-#include "../Config/Debug.h"
-#include "../Config/DEV_Config.h"
+#include "../config/dev_config.h"
 
 // Color
 #define EPD_5in79G_BLACK		0x0

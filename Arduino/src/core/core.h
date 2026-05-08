@@ -32,15 +32,13 @@
 
 //#include "ImageData.h"
 #include <stdlib.h> // malloc() free()
-#include "debug.h"
-#include "Canvas/GUI_Paint.h"
-#include "Font/fonts.h"
+#include "../debug/debug.h"
+#include "canvas/gui_paint.h"
+#include "font/fonts.h"
 
 struct PaperCommand;
 
-int EPD_5in79g_test(void);
 void draw_epd_5in79g_remote(std::string link);
-int simulate_epd_5in79g_test(std::string link);
 
 // Core
 void Clear(const PaperCommand& command);
@@ -65,4 +63,14 @@ void DrawString(const PaperCommand& command);
 void DrawChar(const PaperCommand& command);
 void DrawNum(const PaperCommand& command);
 void DrawTime(const PaperCommand& command);
+
+bool ParseColor(const std::string& color, uint8_t& out);
+bool GetRequiredArg(const PaperCommand& cmd, const std::string& key, std::string& out);
+bool GetOptionalArg(const PaperCommand& cmd, const std::string& key, std::string& out);
+bool ParseInt(const std::string& s, int& out);
+bool ParseDotPixel(const std::string& s, DOT_PIXEL& out);
+bool ParseLineStyle(const std::string& s, LINE_STYLE& out);
+bool ParseDrawFill(const std::string& s, DRAW_FILL& out);
+bool ParseDotStyle(const std::string& s, DOT_STYLE& out);
+bool ParseFont(const std::string& s, sFONT*& out);
 #endif

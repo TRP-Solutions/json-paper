@@ -1,5 +1,6 @@
-#include "emulation/epd_test.h"
+#include "core/core.h"
 #include "manager/console_manager.h"
+#include "simulate/simulate.h"
 #include "util/dev/console/console.h"
 #include "util/dev/console/command/auto_completion.h"
 #include "util/dev/console/command/registry.h"
@@ -17,7 +18,7 @@ void RegisterCoreCommands(CommandRegistry &registry) {
         [](const ParsedArgs &args) {
             std::string url = std::get<std::string>(args.values.at("url"));
 
-            simulate_epd_5in79g_test(url);
+            SimulatePaperDislay(url);
         }
     });
 

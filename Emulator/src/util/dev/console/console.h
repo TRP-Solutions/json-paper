@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "raylib.h"
+#include "debug/debug.h"
 #include "util/dev/console/command/registry.h"
 
 #define CONSOLE_MAX_LOG 1000
@@ -13,14 +14,6 @@
 #define CONSOLE_MAX_HISTORY 18
 
 class ConsoleCommand;
-
-enum LogLevel {
-    FATAL,
-    WARNING,
-    INFO,
-    SUCCESS,
-    ESP
-};
 
 class Console {
 public:
