@@ -47,6 +47,8 @@ String passVal = "value='#NETselect_1575#' ";
 bool isSaved = false;
 bool connectFail = false;
 
+bool jsonErr = false;
+
 bool configMode = false;
 bool canClickBtn = true;
 
@@ -59,6 +61,9 @@ int prevBtnState;
 void setup() {
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
+    delay(1000);
+
+  LogTitle("Start JSON-Paper");
 
   // set the LED pin mode
   pinMode(led, OUTPUT);
@@ -70,7 +75,7 @@ void setup() {
 
 
 void loop() {
-  if (status == WL_CONNECTED && response == "") {
+  if (status == WL_CONNECTED && response == "" && !jsonErr) {
     response = RequestConfig("http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/");
     vector<PaperCommand> commands = ParseJson(response);
   }
@@ -116,6 +121,25 @@ void updateLED() {
     digitalWrite(led, LOW);
     delay(1000);
 }
+
+
+void LogTitle(String title) {
+    int totalWidth = 52;
+    int lineLength = (totalWidth - title.length()) / 2;
+
+    String line = "";
+    for (int i = 0; i < lineLength; i++) {
+        line += "▬";
+    }
+    
+    Serial.println();
+    Serial.print(line);
+    Serial.print(" ");
+    Serial.print(title);
+    Serial.print(" ");
+    Serial.println(line);
+}
+
 
 void APConnect() {
 
@@ -404,6 +428,7 @@ String RequestConfig(String addr) {
 
   if (body.length() == 0) {
     Serial.println("Empty response");
+    jsonErr = true;
     return "";
   }
   
@@ -454,6 +479,7 @@ String httpGet(String host, String path) {
 
   } else {
     Serial.println(protocol + " connection failed");
+    jsonErr = true;
   }
 
   return response;
@@ -502,7 +528,7 @@ vector<PaperCommand> ParseJson(String jsonString) {
 
     Serial.print("JSON parse failed: ");
     Serial.println(error.c_str());
-
+    jsonErr = true;
     return commands;
   }
 
