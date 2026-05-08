@@ -1,6 +1,5 @@
 #include "util/dev/console/console.h"
 
-#include <algorithm>
 #include <cstring>
 
 #include "font_data.h"

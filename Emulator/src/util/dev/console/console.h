@@ -1,5 +1,7 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
+
+#include <algorithm>
 #include <deque>
 #include <span>
 #include <string_view>
