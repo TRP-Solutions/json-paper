@@ -15,6 +15,11 @@ public:
     std::string text;
     int fontSize;
 
+    int x;
+    int y;
+    int height;
+    int width;
+
     bool hovered = false;
     bool pressed = false;
 

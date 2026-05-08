@@ -6,6 +6,11 @@ InputField::InputField(int x, int y, int width, int height, int size)
 {
     bounds = { (float)x, (float)y, (float)width, (float)height };
     fontSize = size;
+
+    this->x = x;
+    this->y = y;
+    this->width = width;
+    this->height = height;
 }
 
 bool InputField::IsCtrlDown() const

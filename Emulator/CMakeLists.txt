@@ -39,7 +39,7 @@ set(ARDUINO_DIR ${PROJECT_ROOT}/Arduino)
 set(SOURCES
         src/main.cpp
 
-        src/emulation/emulation.cpp
+        ../Arduino/src/emulation/emulation.cpp
         src/UI/input_field.cpp
 
         ${ARDUINO_DIR}/src/Canvas/GUI_Paint.cpp
@@ -48,8 +48,8 @@ set(SOURCES
         ${ARDUINO_DIR}/src/Font/font16.cpp
         ${ARDUINO_DIR}/src/Font/font20.cpp
         ${ARDUINO_DIR}/src/Font/font24.cpp
-        src/network/request.cpp
-        src/e-Paper/paper_command.cpp
+        ../Arduino/src/network/request.cpp
+        ../Arduino/src/e-Paper/paper_command.cpp
 
         src/util/dev/console/console.cpp
         src/util/dev/console/command/registry.cpp
@@ -59,7 +59,7 @@ set(SOURCES
 )
 set(HEADERS
         src/debug.h
-        src/emulation/epd_test.h
+        ../Arduino/src/emulation/epd_test.h
         ${ARDUINO_DIR}/src/Font/fonts.h
         ${ARDUINO_DIR}/src/Canvas/GUI_Paint.h
         src/GUI/gui_raylib.cpp
@@ -67,15 +67,15 @@ set(HEADERS
         src/UI/input_field.h
         src/UI/button.cpp
         src/UI/button.h
-        src/network/request.h
-        src/e-Paper/paper_command.h
+        ../Arduino/src/network/request.h
+        ../Arduino/src/e-Paper/paper_command.h
 
         src/util/dev/console/console.h
         src/util/dev/console/command/registry.h
         src/util/dev/console/command/auto_completion.h
         src/util/dev/console/command/commands/core_command.h
         src/manager/console_manager.h
-        src/util/base_64_decode.cpp
+        ../Arduino/src/util/base_64_decode.cpp
 )
 
 set(CMAKE_CXX_STANDARD 20)

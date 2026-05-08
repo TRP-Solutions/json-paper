@@ -3,15 +3,18 @@
 //
 
 #include "request.h"
-
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
 #include <httplib.h>
+#endif
+
 #include <nlohmann/json.hpp>
 #include <iostream>
 
-#include "../e-Paper/paper_command.h"
+#include "e-Paper/paper_command.h"
 
 using json = nlohmann::json;
 
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
 std::string NormalizeHost(std::string& addr, std::string& path) {
     path = "/";
 
@@ -95,3 +98,4 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
         return {};
     }
 }
+#endif

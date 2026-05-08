@@ -11,6 +11,11 @@ Button::Button(int x, int y, int w, int h, const std::string& label, int fontSiz
     bounds = { (float)x, (float)y, (float)w, (float)h };
     text = label;
     this->fontSize = fontSize;
+
+    this->x = x;
+    this->y = y;
+    this->width = w;
+    this->height = h;
 }
 
 void Button::Update()

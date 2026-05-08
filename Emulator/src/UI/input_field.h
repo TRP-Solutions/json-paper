@@ -14,6 +14,12 @@ public:
     int fontSize = 0;
     bool active = false;
 
+    int x;
+    int y;
+    int height;
+    int width;
+
+
     char text[INPUT_FIELD_MAX_LENGTH] = {0};
     int length = 0;
 

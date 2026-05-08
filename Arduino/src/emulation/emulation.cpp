@@ -39,12 +39,16 @@
 
 #include "epd_test.h"
 
-#include "../network/request.h"
-
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
+#include "network/request.h"
 #include "GUI/gui_raylib.h"
+#elif defined(ARDUINO)
+#include "network/request.h"
+#endif
+
 #include "e-Paper/EPD_5in79g.h"
 #include "e-Paper/paper_command.h"
-
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
 int simulate_epd_5in79g_test(std::string link) {
 
     //Create a new image cache named IMAGE_BW and fill it with white
@@ -84,9 +88,12 @@ int simulate_epd_5in79g_test(std::string link) {
 
     return 0;
 }
+#elif defined(ARDUINO)
+
+#endif
 
 void draw_epd_5in79g_remote(std::string link) {
-    std::vector<PaperCommand> commands = Request::RequestConfig(link);
+    std::vector<PaperCommand> commands = Request::RequestConfig(std::move(link));
 
     for (const auto& command : commands) {
         execute_command(command);
@@ -100,14 +107,20 @@ bool ParseColor(const std::string& color, uint8_t& out) {
         out = colorMap[color];
         return true;
     }
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
     ConsoleManager::get().log(WARNING, ("invalid color: " + color).c_str());
+#endif
+
     return false;
 }
 
 bool GetRequiredArg(const PaperCommand& cmd, const std::string& key, std::string& out) {
     auto it = cmd.args.find(key);
     if (it == cmd.args.end()) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(WARNING, ("missing '" + key + "'").c_str());
+#endif
+
         return false;
     }
     out = it->second;
@@ -128,7 +141,10 @@ bool ParseInt(const std::string& s, int& out) {
         out = std::stoi(s);
         return true;
     } catch (...) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(WARNING, ("invalid int: " + s).c_str());
+#endif
+
         return false;
     }
 }
@@ -139,7 +155,10 @@ bool ParseDotPixel(const std::string& s, DOT_PIXEL& out) {
     else if (s == "3x3") out = DOT_PIXEL_3X3;
     else if (s == "4x4") out = DOT_PIXEL_4X4;
     else {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(WARNING, ("invalid width: " + s).c_str());
+#endif
+
         return false;
     }
     return true;
@@ -150,7 +169,10 @@ bool ParseLineStyle(const std::string& s, LINE_STYLE& out) {
         out = lineStyleMap[s];
         return true;
     }
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
     ConsoleManager::get().log(WARNING, ("invalid line style: " + s).c_str());
+#endif
+
     return false;
 }
 bool ParseDrawFill(const std::string& s, DRAW_FILL& out) {
@@ -158,7 +180,10 @@ bool ParseDrawFill(const std::string& s, DRAW_FILL& out) {
         out = drawFillMap[s];
         return true;
     }
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
     ConsoleManager::get().log(WARNING, ("invalid fill: " + s).c_str());
+#endif
+
     return false;
 }
 bool ParseDotStyle(const std::string& s, DOT_STYLE& out) {
@@ -166,7 +191,10 @@ bool ParseDotStyle(const std::string& s, DOT_STYLE& out) {
         out = dotStyleMap[s];
         return true;
     }
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
     ConsoleManager::get().log(WARNING, ("invalid dot style: " + s).c_str());
+#endif
+
     return false;
 }
 bool ParseFont(const std::string& s, sFONT*& out) {
@@ -174,7 +202,9 @@ bool ParseFont(const std::string& s, sFONT*& out) {
         out = fontMap[s];
         return true;
     }
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
     ConsoleManager::get().log(WARNING, ("invalid font: " + s).c_str());
+#endif
 
     return false;
 }
@@ -184,7 +214,10 @@ bool ParseFont(const std::string& s, sFONT*& out) {
 void Clear(const PaperCommand& command) {
     std::string cs;
     if (!GetRequiredArg(command, "color", cs))  {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(WARNING, "Missing required args for 'clear'");
+#endif
+
         return;
     }
 
@@ -197,7 +230,10 @@ void Clear(const PaperCommand& command) {
 void SetRotate(const PaperCommand& command) {
     std::string val;
     if (!GetRequiredArg(command, "rotate", val))  {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(WARNING, "Missing required args for 'set_rotate'");
+#endif
+
         return;
     }
 
@@ -210,7 +246,10 @@ void SetRotate(const PaperCommand& command) {
 void SetMirroring(const PaperCommand& command) {
     std::string val;
     if (!GetRequiredArg(command, "mirror", val))  {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(WARNING, "Missing required args for 'set_mirroring'");
+#endif
+
         return;
     }
 
@@ -226,7 +265,10 @@ void SetPixel(const PaperCommand& command) {
     if (!GetRequiredArg(command, "x", xs) ||
         !GetRequiredArg(command, "y", ys) ||
         !GetRequiredArg(command, "color", cs)) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
             ConsoleManager::get().log(WARNING, "Missing required args for 'set_pixel'");
+#endif
+
             return;
         }
 
@@ -236,7 +278,9 @@ void SetPixel(const PaperCommand& command) {
     uint8_t color;
     if (!ParseColor(cs, color)) return;
 
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
     ConsoleManager::get().log(WARNING, cs.c_str());
+#endif
 
     Paint_SetPixel(x, y, color);
 }
@@ -249,7 +293,10 @@ void ClearWindow(const PaperCommand& command) {
         !GetRequiredArg(command, "x_end", xe) ||
         !GetRequiredArg(command, "y_end", ye) ||
         !GetRequiredArg(command, "color", cs)) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
             ConsoleManager::get().log(WARNING, "Missing required args for 'clear_window'");
+#endif
+
             return;
         }
 
@@ -265,10 +312,13 @@ void ClearWindow(const PaperCommand& command) {
         x1 >= Paint.Width || y1 >= Paint.Height ||
         x2 >= Paint.Width || y2 >= Paint.Height) {
 
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(
             WARNING,
             "Input exceeds the normal display range for 'clear_window'"
         );
+#endif
+
         return;
     }
 
@@ -285,7 +335,10 @@ void DrawPoint(const PaperCommand& command) {
         !GetRequiredArg(command, "color", cs) ||
         !GetRequiredArg(command, "width", ws) ||
         !GetRequiredArg(command, "style", ss)) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
             ConsoleManager::get().log(WARNING, "Missing required args for 'draw_point'");
+#endif
+
             return;
         }
 
@@ -302,7 +355,10 @@ void DrawPoint(const PaperCommand& command) {
 
     if (x < 0 || y < 0 ||
         x > Paint.Width || y > Paint.Height) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(WARNING, "Input exceeds the normal display range for 'draw_point'");
+#endif
+
         return;
     }
     Paint_DrawPoint(x, y, color, width, style);
@@ -318,7 +374,11 @@ void DrawLine(const PaperCommand& command) {
         !GetRequiredArg(command, "color", cs) ||
         !GetRequiredArg(command, "width", ws) ||
         !GetRequiredArg(command, "style", ss)) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
             ConsoleManager::get().log(WARNING, "Missing required args for 'draw_line'");
+#endif
+
+
             return;
         }
 
@@ -339,10 +399,13 @@ void DrawLine(const PaperCommand& command) {
     x1 >= Paint.Width || y1 >= Paint.Height ||
     x2 >= Paint.Width || y2 >= Paint.Height) {
 
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(
             WARNING,
             "Input exceeds the normal display range for 'draw_line'"
         );
+#endif
+
         return;
     }
 
@@ -359,7 +422,10 @@ void DrawRectangle(const PaperCommand& command) {
         !GetRequiredArg(command, "color", cs) ||
         !GetRequiredArg(command, "width", ws) ||
         !GetRequiredArg(command, "fill", fs)) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
             ConsoleManager::get().log(WARNING, "Missing required args for 'draw_rectangle'");
+#endif
+
             return;
         }
 
@@ -380,10 +446,13 @@ void DrawRectangle(const PaperCommand& command) {
         x1 >= Paint.Width || y1 >= Paint.Height ||
         x2 >= Paint.Width || y2 >= Paint.Height) {
 
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(
             WARNING,
             "Input exceeds the normal display range for 'draw_rectangle'"
         );
+#endif
+
         return;
     }
     Paint_DrawRectangle(x1, y1, x2, y2, color, width, fill);
@@ -398,7 +467,10 @@ void DrawCircle(const PaperCommand& command) {
         !GetRequiredArg(command, "color", cs) ||
         !GetRequiredArg(command, "width", ws) ||
         !GetRequiredArg(command, "fill", fs)) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
             ConsoleManager::get().log(WARNING, "Missing required args for 'draw_circle'");
+#endif
+
             return;
         }
 
@@ -419,10 +491,13 @@ void DrawCircle(const PaperCommand& command) {
     x + r >= Paint.Width ||
     y + r >= Paint.Height) {
 
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(
             WARNING,
             "Input exceeds the normal display range for 'draw_circle'"
         );
+#endif
+
         return;
     }
 
@@ -439,7 +514,10 @@ void DrawImage(const PaperCommand& command) {
         !GetRequiredArg(command, "width", ws) ||
         !GetRequiredArg(command, "height", hs) ||
         !GetRequiredArg(command, "data", dataStr)) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
             ConsoleManager::get().log(WARNING, "Missing required args for 'draw_image'");
+#endif
+
             return;
     }
 
@@ -456,7 +534,10 @@ void DrawImage(const PaperCommand& command) {
 
     int expected = (width * height + 1) / 2;
     if ((int)buffer.size() != expected) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(WARNING, "Invalid image data size");
+#endif
+
         return;
     }
 
@@ -482,10 +563,13 @@ void DrawImage(const PaperCommand& command) {
 
             if (x < 0 || y < 0 ||
             width <= 0 || height <= 0) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
                 ConsoleManager::get().log(
                     WARNING,
                     "Input exceeds the normal display range for 'draw_image'"
                 );
+#endif
+
                 return;
             }
 
@@ -511,7 +595,10 @@ void DrawChar(const PaperCommand& command) {
         !GetRequiredArg(command, "foreground", fg) ||
         !GetRequiredArg(command, "background", bg) ||
         !GetRequiredArg(command, "font", fs)) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
             ConsoleManager::get().log(WARNING, "Missing required args for 'draw_char'");
+#endif
+
             return;
         }
 
@@ -529,10 +616,13 @@ void DrawChar(const PaperCommand& command) {
         x >= Paint.Width ||
         y >= Paint.Height) {
 
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(
             WARNING,
             "Input exceeds the normal display range for 'draw_char'"
         );
+#endif
+
         return;
     }
 
@@ -548,7 +638,10 @@ void DrawNum(const PaperCommand& command) {
         !GetRequiredArg(command, "foreground", fg) ||
         !GetRequiredArg(command, "background", bg) ||
         !GetRequiredArg(command, "font", fs))  {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(WARNING, "Missing required args for 'draw_num'");
+#endif
+
         return;
         }
 
@@ -566,10 +659,13 @@ void DrawNum(const PaperCommand& command) {
         x >= Paint.Width ||
         y >= Paint.Height) {
 
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(
             WARNING,
             "Input exceeds the normal display range for 'draw_num'"
         );
+#endif
+
         return;
     }
     Paint_DrawNum(x, y, num, font, fg_c, bg_c);
@@ -586,7 +682,10 @@ void DrawTime(const PaperCommand& command) {
         !GetRequiredArg(command, "foreground", fg) ||
         !GetRequiredArg(command, "background", bg) ||
         !GetRequiredArg(command, "font", fs)) {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
             ConsoleManager::get().log(WARNING, "Missing required args for 'draw_time'");
+#endif
+
             return;
         }
 
@@ -607,10 +706,13 @@ void DrawTime(const PaperCommand& command) {
         x >= Paint.Width ||
         y >= Paint.Height) {
 
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(
             WARNING,
             "Input exceeds the normal display range for 'draw_time'"
         );
+#endif
+
         return;
     }
     Paint_DrawTime(x, y, &t, font, fg_c, bg_c);
@@ -676,7 +778,10 @@ void DrawString(const PaperCommand& command) {
         !GetRequiredArg(command, "foreground", fg) ||
         !GetRequiredArg(command, "background", bg) ||
         !GetRequiredArg(command, "font", fs))  {
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
             ConsoleManager::get().log(WARNING, "Missing required args for 'draw_string'");
+#endif
+
             return;
         }
 
@@ -693,10 +798,13 @@ void DrawString(const PaperCommand& command) {
     x + font->Width > Paint.Width ||
     y + font->Height > Paint.Height) {
 
+#if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
         ConsoleManager::get().log(
             WARNING,
             "Input exceeds the normal display range for 'draw_string'"
         );
+#endif
+
         return;
     }
 
