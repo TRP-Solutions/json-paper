@@ -38,12 +38,6 @@ String passAP = "";
 String ssidName = "ssidInput";
 String passName = "passInput";
 
-String ssidVal = "value='trp-intern' ";
-String passVal = "value='#NETselect_1575#' ";
-
-// String ssidVal = "value='CL E+F' ";
-// String passVal = "value='ContainerSpinderi2020' ";
-
 bool isSaved = false;
 bool connectFail = false;
 
@@ -76,7 +70,7 @@ void setup() {
 
 void loop() {
   if (status == WL_CONNECTED && response == "" && !jsonErr) {
-    response = RequestConfig("http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/");
+    response = RequestConfig("");
     vector<PaperCommand> commands = ParseJson(response);
   }
 
@@ -260,8 +254,8 @@ void APConnect() {
 
             if (!isSaved){
               client.println("<form method='POST' action='/'>");
-              client.println("<input type='text' name='" + ssidName + "' placeholder='SSID' " + ssidVal + "required>");
-              client.println("<input type='text' name='" + passName + "' placeholder='Password' " + passVal + "required>");
+              client.println("<input type='text' name='" + ssidName + "' placeholder='SSID' required>");
+              client.println("<input type='text' name='" + passName + "' placeholder='Password' required>");
               client.println("<br>");
               client.println("<input type='submit' value='Connect'>");
               client.println("</form>");
