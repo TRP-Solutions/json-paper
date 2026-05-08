@@ -1,6 +1,6 @@
 #include "core/core.h"
 #include "raylib.h"
-#include "e-Paper/epd_5in79g.h"
+#include "e-paper/epd_5in79g.h"
 #include "gui/gui_raylib.h"
 #include "manager/console_manager.h"
 #include "simulate/simulate.h"

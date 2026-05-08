@@ -44,8 +44,8 @@
 
 #include "core.h"
 
-#include "e-Paper/epd_5in79g.h"
-#include "e-Paper/paper_command.h"
+#include "e-paper/epd_5in79g.h"
+#include "e-paper/paper_command.h"
 
 void draw_epd_5in79g_remote(std::string link) {
     std::vector<PaperCommand> commands = Request::RequestConfig(std::move(link));

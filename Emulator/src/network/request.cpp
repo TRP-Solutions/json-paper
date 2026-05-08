@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 
-#include "e-Paper/paper_command.h"
+#include "e-paper/paper_command.h"
 
 using json = nlohmann::json;
 

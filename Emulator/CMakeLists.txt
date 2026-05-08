@@ -43,25 +43,25 @@ set(SOURCES
         src/util/dev/console/command/auto_completion.cpp
         src/util/dev/console/command/commands/core_command.cpp
         src/manager/console_manager.cpp
-        src/UI/input_field.cpp
-        src/GUI/gui_raylib.cpp
+        src/ui/input_field.cpp
+        src/gui/gui_raylib.cpp
 
         ${ARDUINO_DIR}/src/core/core.cpp
-        ${ARDUINO_DIR}/src/Canvas/GUI_Paint.cpp
-        ${ARDUINO_DIR}/src/Font/font8.cpp
-        ${ARDUINO_DIR}/src/Font/font12.cpp
-        ${ARDUINO_DIR}/src/Font/font16.cpp
-        ${ARDUINO_DIR}/src/Font/font20.cpp
-        ${ARDUINO_DIR}/src/Font/font24.cpp
-        ${ARDUINO_DIR}/src/e-Paper/paper_command.cpp
+        ${ARDUINO_DIR}/src/canvas/GUI_Paint.cpp
+        ${ARDUINO_DIR}/src/font/font8.cpp
+        ${ARDUINO_DIR}/src/font/font12.cpp
+        ${ARDUINO_DIR}/src/font/font16.cpp
+        ${ARDUINO_DIR}/src/font/font20.cpp
+        ${ARDUINO_DIR}/src/font/font24.cpp
+        ${ARDUINO_DIR}/src/e-paper/paper_command.cpp
         ${ARDUINO_DIR}/src/util/base_64_decode.cpp
 
 )
 set(HEADERS
-        src/GUI/gui_raylib.h
-        src/UI/input_field.h
-        src/UI/button.cpp
-        src/UI/button.h
+        src/gui/gui_raylib.h
+        src/ui/input_field.h
+        src/ui/button.cpp
+        src/ui/button.h
         src/util/dev/console/console.h
         src/util/dev/console/command/registry.h
         src/util/dev/console/command/auto_completion.h
@@ -71,9 +71,9 @@ set(HEADERS
         ${ARDUINO_DIR}/src/debug/debug.h
         ${ARDUINO_DIR}/src/core/core.h
         ${ARDUINO_DIR}/src/network/request.h
-        ${ARDUINO_DIR}/src/e-Paper/paper_command.h
-        ${ARDUINO_DIR}/src/Font/fonts.h
-        ${ARDUINO_DIR}/src/Canvas/GUI_Paint.h
+        ${ARDUINO_DIR}/src/e-paper/paper_command.h
+        ${ARDUINO_DIR}/src/font/fonts.h
+        ${ARDUINO_DIR}/src/canvas/gui_paint.h
         src/simulate/simulate.cpp
         src/simulate/simulate.h
 )

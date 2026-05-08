@@ -4,7 +4,7 @@
 #include "config/dev_config.h"
 #include "core/core.h"
 #include "debug/debug.h"
-#include "e-Paper/epd_5in79g.h"
+#include "e-paper/epd_5in79g.h"
 #include "gui/gui_raylib.h"
 
 int SimulatePaperDislay(std::string link) {

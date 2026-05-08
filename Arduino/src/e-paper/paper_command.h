@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "e-Paper/epd_5in79g.h"
+#include "e-paper/epd_5in79g.h"
 #include "canvas/gui_paint.h"
 
 struct PaperCommand {
