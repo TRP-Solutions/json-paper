@@ -32,15 +32,13 @@
 
 //#include "ImageData.h"
 #include <stdlib.h> // malloc() free()
-#include "debug.h"
-#include "Canvas/GUI_Paint.h"
-#include "Font/fonts.h"
+#include "../debug/debug.h"
+#include "canvas/gui_paint.h"
+#include "font/fonts.h"
 
 struct PaperCommand;
 
-int EPD_5in79g_test(void);
 void draw_epd_5in79g_remote(std::string link);
-int simulate_epd_5in79g_test(std::string link);
 
 // Core
 void Clear(const PaperCommand& command);

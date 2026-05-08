@@ -1,9 +1,11 @@
-#include "emulation/epd_test.h"
+#include "core/core.h"
 #include "raylib.h"
-#include "GUI/gui_raylib.h"
+#include "e-Paper/epd_5in79g.h"
+#include "gui/gui_raylib.h"
 #include "manager/console_manager.h"
-#include "UI/button.h"
-#include "UI/input_field.h"
+#include "simulate/simulate.h"
+#include "ui/button.h"
+#include "ui/input_field.h"
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -30,7 +32,7 @@ int main(void)
     InputField input_field(340, 550, 700, 50, 30);
 
     button.onClick = [&input_field, &lastExecutedText, &hasExecuted]() {
-        simulate_epd_5in79g_test(input_field.text);
+        SimulatePaperDislay(input_field.text);
         lastExecutedText = input_field.text;
         hasExecuted = true;
     };
@@ -43,7 +45,7 @@ int main(void)
         bool textChanged = input_field.text != lastExecutedText;
 
         if (hasExecuted && !textChanged && (regainedFocus)) {
-            simulate_epd_5in79g_test(input_field.text);
+            SimulatePaperDislay(input_field.text);
             lastExecutedText = input_field.text;
         }
 
@@ -82,3 +84,5 @@ int main(void)
 
     return 0;
 }
+
+

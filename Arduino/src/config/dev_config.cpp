@@ -27,7 +27,7 @@
 # THE SOFTWARE.
 #
 ******************************************************************************/
-#include "DEV_Config.h"
+#include "dev_config.h"
 
 void GPIO_Config(void)
 {

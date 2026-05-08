@@ -38,44 +38,44 @@ set(ARDUINO_DIR ${PROJECT_ROOT}/Arduino)
 
 set(SOURCES
         src/main.cpp
-
-        ../Arduino/src/emulation/emulation.cpp
+        src/util/dev/console/console.cpp
+        src/util/dev/console/command/registry.cpp
+        src/util/dev/console/command/auto_completion.cpp
+        src/util/dev/console/command/commands/core_command.cpp
+        src/manager/console_manager.cpp
         src/UI/input_field.cpp
+        src/GUI/gui_raylib.cpp
 
+        ${ARDUINO_DIR}/src/core/core.cpp
         ${ARDUINO_DIR}/src/Canvas/GUI_Paint.cpp
         ${ARDUINO_DIR}/src/Font/font8.cpp
         ${ARDUINO_DIR}/src/Font/font12.cpp
         ${ARDUINO_DIR}/src/Font/font16.cpp
         ${ARDUINO_DIR}/src/Font/font20.cpp
         ${ARDUINO_DIR}/src/Font/font24.cpp
-        ../Arduino/src/network/request.cpp
-        ../Arduino/src/e-Paper/paper_command.cpp
+        ${ARDUINO_DIR}/src/e-Paper/paper_command.cpp
+        ${ARDUINO_DIR}/src/util/base_64_decode.cpp
 
-        src/util/dev/console/console.cpp
-        src/util/dev/console/command/registry.cpp
-        src/util/dev/console/command/auto_completion.cpp
-        src/util/dev/console/command/commands/core_command.cpp
-        src/manager/console_manager.cpp
 )
 set(HEADERS
-        src/debug.h
-        ../Arduino/src/emulation/epd_test.h
-        ${ARDUINO_DIR}/src/Font/fonts.h
-        ${ARDUINO_DIR}/src/Canvas/GUI_Paint.h
-        src/GUI/gui_raylib.cpp
         src/GUI/gui_raylib.h
         src/UI/input_field.h
         src/UI/button.cpp
         src/UI/button.h
-        ../Arduino/src/network/request.h
-        ../Arduino/src/e-Paper/paper_command.h
-
         src/util/dev/console/console.h
         src/util/dev/console/command/registry.h
         src/util/dev/console/command/auto_completion.h
         src/util/dev/console/command/commands/core_command.h
         src/manager/console_manager.h
-        ../Arduino/src/util/base_64_decode.cpp
+
+        ${ARDUINO_DIR}/src/debug/debug.h
+        ${ARDUINO_DIR}/src/core/core.h
+        ${ARDUINO_DIR}/src/network/request.h
+        ${ARDUINO_DIR}/src/e-Paper/paper_command.h
+        ${ARDUINO_DIR}/src/Font/fonts.h
+        ${ARDUINO_DIR}/src/Canvas/GUI_Paint.h
+        src/simulate/simulate.cpp
+        src/simulate/simulate.h
 )
 
 set(CMAKE_CXX_STANDARD 20)
@@ -87,6 +87,18 @@ elseif(APPLE)
     add_executable(e_paper_emulator MACOSX_BUNDLE ${SOURCES} ${HEADERS})
 elseif(UNIX AND NOT APPLE)
     add_executable(e_paper_emulator ${SOURCES} ${HEADERS})
+endif()
+
+if(ARDUINO)
+    target_sources(e_paper_emulator PRIVATE
+            ${ARDUINO_DIR}/src/debug/debug.cpp
+            ${ARDUINO_DIR}/src/network/request.cpp
+    )
+else()
+    target_sources(e_paper_emulator PRIVATE
+            src/debug/debug.cpp
+            src/network/request.cpp
+    )
 endif()
 
 if (WIN32)

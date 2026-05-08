@@ -76,7 +76,6 @@ void Console::draw()
             case WARNING: color = YELLOW; break;
             case INFO:    color = RAYWHITE; break;
             case SUCCESS: color = GREEN;  break;
-            case ESP: color = BLUE;  break;
         }
 
         DrawTextEx(

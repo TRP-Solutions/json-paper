@@ -78,8 +78,8 @@
 #ifndef __GUI_PAINT_H
 #define __GUI_PAINT_H
 
-#include "debug.h"
-#include "../Font/fonts.h"
+#include "../debug/debug.h"
+#include "../font/fonts.h"
 
 /**
  * Image attributes
