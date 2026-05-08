@@ -10,20 +10,14 @@
 #include "ui/button.h"
 #include "ui/input_field.h"
 
-//------------------------------------------------------------------------------------
-// Program main entry point
-//------------------------------------------------------------------------------------
 int main(void)
 {
-    // Initialization
-    //--------------------------------------------------------------------------------------
     const int screenWidth = 1920;
     const int screenHeight = 1080;
 
     InitWindow(screenWidth, screenHeight, "raylib [core] emulation - basic window");
 
-    SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
-    //--------------------------------------------------------------------------------------
+    SetTargetFPS(60);
 
     std::string lastExecutedText;
     bool hasExecuted = false;
@@ -36,7 +30,7 @@ int main(void)
 
     button.onClick = [&input_field, &lastExecutedText, &hasExecuted]() {
         SimulatePaperDislay(input_field.text);
-        lastExecutedText = input_field.text;
+        lastExecutedText = std::string(input_field.text);
         hasExecuted = true;
     };
     while (!WindowShouldClose())
@@ -45,11 +39,11 @@ int main(void)
 
         bool regainedFocus = isFocused && !wasFocused;
 
-        bool textChanged = input_field.text != lastExecutedText;
+        bool textChanged = std::string(input_field.text) != lastExecutedText;
 
         if (hasExecuted && !textChanged && (regainedFocus)) {
             SimulatePaperDislay(input_field.text);
-            lastExecutedText = input_field.text;
+            lastExecutedText = std::string(input_field.text);
         }
 
         wasFocused = isFocused;
@@ -80,10 +74,7 @@ int main(void)
     }
     ConsoleManager::destroy();
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    CloseWindow();        // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
+    CloseWindow();
 
     return 0;
 }
