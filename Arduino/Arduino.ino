@@ -1,22 +1,9 @@
+#pragma GCC diagnostic warning "-fexceptions"
 #include "WiFiS3.h"
 #include <EEPROM.h>
 #include "arduino_secrets.h"
 #include <ArduinoJson.h>
-#include <vector>
-using std::vector;
-
-struct PaperCommand {
-  String cmd;
-  JsonObject args;
-};
-
-vector<PaperCommand> ParseJson(String jsonString);
-
-WiFiClient httpClient;
-WiFiSSLClient httpsClient;
-
-// polymorf pointer
-WiFiClient* client;
+#include "src/core/core.h"
 
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
@@ -24,11 +11,6 @@ char pass[] = SECRET_PASS;
 int led = LED_BUILTIN;
 int status = WL_IDLE_STATUS;
 WiFiServer server(80);
-
-int port = 0;
-String protocol = "";
-
-String response = "";
 
 String getEerom = "";
 
@@ -69,11 +51,6 @@ void setup() {
 
 
 void loop() {
-  if (status == WL_CONNECTED && response == "" && !jsonErr) {
-    response = RequestConfig("");
-    vector<PaperCommand> commands = ParseJson(response);
-  }
-
   if (canClickBtn) ButtonClick();
   if (!canClickBtn && !configMode && status != WL_CONNECTED && (!connectFail || isSaved)) WiFiConnect();
   if (configMode) APConnect();
@@ -332,6 +309,7 @@ void WiFiConnect() {
     Serial.print("   • IP: ");
     Serial.println(WiFi.localIP());
     connectFail = false;
+    draw_epd_5in79g_remote("http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/") ;
   } else {
     Serial.println("✗ Error no connection");
     connectFail = true;
@@ -405,154 +383,5 @@ String urlDecode(String input) {
 }
 
 
-// Request
-String RequestConfig(String addr) {
-
-  String path;
-  String host = NormalizeHost(addr, path);
-
-  Serial.println("HOST: " + host);
-  Serial.println("PATH: " + path);
-
-  String body;
-
-  Serial.println("→ Using " + protocol + " (" + port + ")");
-
-  body = httpGet(host, path);
-
-  if (body.length() == 0) {
-    Serial.println("Empty response");
-    jsonErr = true;
-    return "";
-  }
-  
-  Serial.println("Raw response:");
-  Serial.println(body);
-
-  return body;
-}
-
-// Http
-String httpGet(String host, String path) {
-
-  String response = "";
-
-  Serial.println(protocol + " connecting...");
-
-  if (client->connect(host.c_str(), port)) {
-
-    Serial.println(protocol + " OK");
-
-    client->print("GET ");
-    client->print(path);
-    client->println(" HTTP/1.1");
-
-    client->print("Host: ");
-    client->println(host);
-
-    client->println("Connection: close");
-    client->println();
-
-    bool headerEnded = false;
-
-    while (client->connected() || client->available()) {
-
-      String line = client->readStringUntil('\n');
-
-      if (line == "\r") {
-        headerEnded = true;
-        continue;
-      }
-
-      if (headerEnded) {
-        response += line;
-      }
-    }
-
-    client->stop();
-
-  } else {
-    Serial.println(protocol + " connection failed");
-    jsonErr = true;
-  }
-
-  return response;
-}
-
-
-
-// Url parser
-String NormalizeHost(String addr, String &path) {
-  path = "/";
-
-  if (addr.startsWith("https://")) {
-    addr = addr.substring(8);
-    protocol = "HTTPS";
-    port = 443;
-    client = &httpsClient;
-  }
-  else if (addr.startsWith("http://")) {
-    addr = addr.substring(7);
-    protocol = "HTTP";
-    port = 80;
-    client = &httpClient;
-  }
-
-  int slashPos = addr.indexOf('/');
-
-  if (slashPos != -1) {
-    path = addr.substring(slashPos);
-    addr = addr.substring(0, slashPos);
-  }
-
-  return addr;
-}
-
-
-// JSON parser
-vector<PaperCommand> ParseJson(String jsonString) {
-
-  static JsonDocument doc;
-
-  vector<PaperCommand> commands;
-
-  DeserializationError error = deserializeJson(doc, jsonString);
-
-  if (error) {
-
-    Serial.print("JSON parse failed: ");
-    Serial.println(error.c_str());
-    jsonErr = true;
-    return commands;
-  }
-
-  JsonArray jsonCommands = doc["commands"];
-  int countCmd = 1;
-  for (JsonObject jsonCmd : jsonCommands) {
-
-    PaperCommand command;
-
-    command.cmd = jsonCmd["cmd"].as<String>();
-    command.args = jsonCmd["args"];
-
-    Serial.println("#" + String(countCmd) + " CMD:");
-    
-    Serial.print("   • ");
-    Serial.println(command.cmd);
-    countCmd++;
-    
-    for (JsonPair kv : command.args) {
-
-      Serial.print("      ");
-      Serial.print(kv.key().c_str());
-      Serial.print(" = ");
-      Serial.println(kv.value().as<String>());
-    }
-
-    commands.push_back(command);
-  }
-
-  return commands;
-}
 
 
