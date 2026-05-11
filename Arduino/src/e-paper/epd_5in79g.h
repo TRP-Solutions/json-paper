@@ -31,6 +31,7 @@
 #ifndef _EPD_5in79G_h_
 #define _EPD_5in79G_h_
 
+#include "../debug_custom/debug.h"
 #include "../config/dev_config.h"
 
 // Color
