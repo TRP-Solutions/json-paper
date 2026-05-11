@@ -81,7 +81,7 @@
 #include <string.h> //memset()
 #include <math.h>
 
-#include "config/dev_config.h"
+#include "../config/dev_config.h"
 
 PAINT Paint;
 

@@ -34,7 +34,7 @@
 
 #include <vector>
 
-#include "network/request.h"
+#include "../network/request.h"
 
 #if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
 #include "../../Emulator/src/gui/gui_raylib.h"
@@ -43,7 +43,7 @@
 
 #include "core.h"
 
-#include "e-paper/paper_command.h"
+#include "../e-paper/paper_command.h"
 
 void draw_epd_5in79g_remote(std::string link) {
     std::vector<PaperCommand> commands = Request::RequestConfig(std::move(link));

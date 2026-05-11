@@ -1,6 +1,6 @@
-#include "canvas/gui_paint.h"
-#include "config/dev_config.h"
-#include "core/core.h"
+#include "../../canvas/gui_paint.h"
+#include "../../config/dev_config.h"
+#include "../core.h"
 
 void DrawLine(const PaperCommand& command) {
     std::string xs, ys, xe, ye, cs, ws, ss;

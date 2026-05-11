@@ -34,8 +34,8 @@
 #include <stdlib.h> // malloc() free()
 #include <string>
 #include "../debug_custom/debug.h"
-#include "canvas/gui_paint.h"
-#include "font/fonts.h"
+#include "../canvas/gui_paint.h"
+#include "../font/fonts.h"
 
 struct PaperCommand;
 

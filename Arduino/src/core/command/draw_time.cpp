@@ -1,7 +1,7 @@
-#include "canvas/gui_paint.h"
-#include "config/dev_config.h"
-#include "core/core.h"
-#include "font/fonts.h"
+#include "../../canvas/gui_paint.h"
+#include "../../config/dev_config.h"
+#include "../core.h"
+#include "../../font/fonts.h"
 
 void DrawTime(const PaperCommand& command) {
     std::string xs, ys, hs, ms, ss, fg, bg, fs;

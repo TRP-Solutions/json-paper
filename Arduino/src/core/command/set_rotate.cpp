@@ -1,6 +1,6 @@
-#include "canvas/gui_paint.h"
-#include "config/dev_config.h"
-#include "core/core.h"
+#include "../../canvas/gui_paint.h"
+#include "../../config/dev_config.h"
+#include "../core.h"
 
 void SetRotate(const PaperCommand& command) {
     std::string val;

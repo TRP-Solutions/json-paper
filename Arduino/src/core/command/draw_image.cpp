@@ -1,8 +1,8 @@
 #include <vector>
 
-#include "canvas/gui_paint.h"
-#include "config/dev_config.h"
-#include "core/core.h"
+#include "../../canvas/gui_paint.h"
+#include "../../config/dev_config.h"
+#include "../core.h"
 
 std::vector<uint8_t> Base64Decode(const std::string & string);
 

@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "core/core.h"
+#include "../core/core.h"
 
 std::unordered_map<std::string, CmdHandler> cmdMap = {
     {"clear", Clear},

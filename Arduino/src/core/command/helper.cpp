@@ -1,5 +1,5 @@
 #include "../core.h"
-#include "e-paper/paper_command.h"
+#include "../../e-paper/paper_command.h"
 
 bool ParseColor(const std::string& color, uint8_t& out) {
     if (colorMap.count(color)) {

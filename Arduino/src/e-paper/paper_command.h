@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "e-paper/epd_5in79g.h"
-#include "canvas/gui_paint.h"
+#include "../canvas/gui_paint.h"
 
 struct PaperCommand {
     std::string name;
