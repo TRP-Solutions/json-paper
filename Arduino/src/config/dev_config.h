@@ -30,10 +30,13 @@
 #ifndef _DEV_CONFIG_H_
 #define _DEV_CONFIG_H_
 
-//#include <Arduino.h>
+#ifdef ARDUINO
+  #include <Arduino.h>
+  #include <SPI.h>
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
-//#include <SPI.h>
 
 /**
  * data
