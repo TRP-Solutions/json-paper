@@ -8,9 +8,8 @@
 #include <map>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
-#include "e-paper/epd_5in79g.h"
+#include "epd_5in79g.h"
 #include "../canvas/gui_paint.h"
 
 struct PaperCommand {
