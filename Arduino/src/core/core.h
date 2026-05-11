@@ -32,7 +32,8 @@
 
 //#include "ImageData.h"
 #include <stdlib.h> // malloc() free()
-#include "../debug/debug.h"
+#include <string>
+#include "../debug_custom/debug.h"
 #include "canvas/gui_paint.h"
 #include "font/fonts.h"
 

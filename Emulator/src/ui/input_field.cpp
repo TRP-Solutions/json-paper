@@ -1,6 +1,6 @@
 #include "input_field.h"
-#include <cstring>
 #include <algorithm>
+#include <cstring>
 
 InputField::InputField(int x, int y, int width, int height, int size)
 {
