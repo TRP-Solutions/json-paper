@@ -39,5 +39,5 @@ void DrawNum(const PaperCommand& command) {
 
         return;
         }
-    Paint_DrawNum(x, y, num, font, fg_c, bg_c);
+    Paint_DrawNum(x+1, y+1, num, font, fg_c, bg_c);
 }

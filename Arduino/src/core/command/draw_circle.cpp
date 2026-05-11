@@ -40,5 +40,5 @@ void DrawCircle(const PaperCommand& command) {
         return;
     }
 
-    Paint_DrawCircle(x, y, r, color, width, fill);
+    Paint_DrawCircle(x+1, y+1, r, color, width, fill);
 }

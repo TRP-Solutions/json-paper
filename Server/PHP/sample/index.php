@@ -3,6 +3,17 @@ require_once __DIR__."/../lib/Display.php";
 
 $display = new Display();
 
+$img = new \Imagick();
+
+$img->setResolution(72, 72);
+
+$img->setOption('svg:antialias', 'false');
+$img->setOption('svg:shape-rendering', 'crispEdges');
+
+$img->setBackgroundColor(new \ImagickPixel('transparent'));
+
+$img->readImage(__DIR__ . '/../../../Media/logo.svg');
+
 $display
 	->clear(Color::WHITE)
 
@@ -61,11 +72,9 @@ $display
 	)
 
 	->image(
-		320,
-		20,
-		__DIR__.'/../../../Media/logo.svg',
-		100,
-		100,
+		10,
+		150,
+		$img,
 		Color::TRANSPARENT
 	);
 

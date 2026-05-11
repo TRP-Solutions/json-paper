@@ -1,5 +1,7 @@
 #include "simulate.h"
 
+#include <utility>
+
 #include "canvas/gui_paint.h"
 #include "config/dev_config.h"
 #include "core/core.h"
@@ -16,8 +18,7 @@ int SimulatePaperDislay(std::string link) {
         return -1;
     }
 
-    Paint_NewImage(BlackImage, EPD_5in79G_WIDTH/2, EPD_5in79G_HEIGHT/2, 0, WHITE);
-    Paint_SetScale(4);
+    Paint_NewImage(BlackImage, EPD_5in79G_WIDTH, EPD_5in79G_HEIGHT, 0, WHITE);
 
     Paint_SelectImage(BlackImage);
     Paint_Clear(0xFF);
@@ -29,11 +30,15 @@ int SimulatePaperDislay(std::string link) {
     // 2.Drawing on the image
     log(INFO, "Drawing:BlackImage\r\n");
 
-    draw_epd_5in79g_remote(link);
+    draw_epd_5in79g_remote(std::move(link));
 
     log(INFO, "EPD_Display\r\n");
-    GUI_Raylib::CopyToDisplayBuffer(BlackImage, EPD_5in79G_WIDTH/2, EPD_5in79G_HEIGHT/2,
-                             (EPD_5in79G_WIDTH/2 + 3) / 4);
+    GUI_Raylib::CopyToDisplayBuffer(
+        BlackImage,
+        EPD_5in79G_WIDTH,
+        EPD_5in79G_HEIGHT,
+        (EPD_5in79G_WIDTH + 3) / 4
+    );
 
     free(BlackImage);
     BlackImage = NULL;

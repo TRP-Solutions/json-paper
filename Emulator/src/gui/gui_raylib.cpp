@@ -51,7 +51,7 @@ int GUI_Raylib::get_pixel(int x, int y)
     return (byte >> shift) & 0x03;
 }
 
-int scale = 4;
+int scale = 2;
 void GUI_Raylib::DrawEPD()
 {
     if (displayBuffer == nullptr) return;
@@ -73,7 +73,7 @@ void GUI_Raylib::DrawEPD()
                 default: color = MAGENTA; break;
             }
 
-            DrawRectangle(x * scale, y * scale, scale, scale, color);
+            DrawRectangle(x * scale + 10, y * scale + 10, scale, scale, color);
         }
     }
 }

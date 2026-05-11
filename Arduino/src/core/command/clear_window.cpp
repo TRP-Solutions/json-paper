@@ -34,5 +34,5 @@ void ClearWindow(const PaperCommand& command) {
         return;
         }
 
-    Paint_ClearWindows(x1, y1, x2, y2, color);
+    Paint_ClearWindows(x1+1, y1+1, x2+1, y2+1, color);
 }

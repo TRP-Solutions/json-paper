@@ -221,17 +221,11 @@ class Display
 	public function image(
 		int $x,
 		int $y,
-		string $path,
-		int $width,
-		int $height,
+		\Imagick $img,
 		Color $transparent = Color::TRANSPARENT
 	): self {
 
-		$converted = convertToIndexedImage(
-			$path,
-			$width,
-			$height
-		);
+		$converted = new Image($img);
 
 		$this->commands[] = [
 			"cmd" => "draw_image",

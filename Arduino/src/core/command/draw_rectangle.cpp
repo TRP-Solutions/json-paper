@@ -40,5 +40,5 @@ void DrawRectangle(const PaperCommand& command) {
 
         return;
         }
-    Paint_DrawRectangle(x1, y1, x2, y2, color, width, fill);
+    Paint_DrawRectangle(x1+1, y1+1, x2+1, y2+1, color, width, fill);
 }

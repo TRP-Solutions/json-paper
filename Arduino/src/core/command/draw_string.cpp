@@ -79,8 +79,8 @@ void DrawString(const PaperCommand& command) {
         !ParseFont(fs, font)) return;
 
     if (x < 0 || y < 0 ||
-    x + font->Width > Paint.Width ||
-    y + font->Height > Paint.Height) {
+    x + font->Width >= Paint.Width ||
+    y + font->Height >= Paint.Height) {
         log(
             WARNING,
             "Input exceeds the normal display range for 'draw_string'"
@@ -97,5 +97,5 @@ void DrawString(const PaperCommand& command) {
     uint8_t bg_c;
     if (!ParseColor(bg, bg_c)) return;
 
-    Paint_DrawString_EN(x, y, text.c_str(), font, fg_c, bg_c);
+    Paint_DrawString_EN(x+1, y+1, text.c_str(), font, fg_c, bg_c);
 }

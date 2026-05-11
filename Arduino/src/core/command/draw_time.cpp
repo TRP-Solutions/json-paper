@@ -44,5 +44,5 @@ void DrawTime(const PaperCommand& command) {
 
         return;
         }
-    Paint_DrawTime(x, y, &t, font, fg_c, bg_c);
+    Paint_DrawTime(x+1, y+1, &t, font, fg_c, bg_c);
 }

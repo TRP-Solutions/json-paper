@@ -41,5 +41,5 @@ void DrawLine(const PaperCommand& command) {
         return;
     }
 
-    Paint_DrawLine(x1, y1, x2, y2, color, width, style);
+    Paint_DrawLine(x1+1, y1+1, x2+1, y2+1, color, width, style);
 }

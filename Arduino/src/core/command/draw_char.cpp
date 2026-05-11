@@ -39,5 +39,5 @@ void DrawChar(const PaperCommand& command) {
         return;
         }
 
-    Paint_DrawChar(x, y, chs[0], font, fg_c, bg_c);
+    Paint_DrawChar(x+1, y+1, chs[0], font, fg_c, bg_c);
 }

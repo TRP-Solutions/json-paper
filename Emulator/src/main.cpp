@@ -25,8 +25,8 @@ int main(void)
 
     ConsoleManager::create();
 
-    Button button(20, 550, 300, 50, "Test", 30);
-    InputField input_field(340, 550, 700, 50, 30);
+    Button button(20, 570, 300, 50, "Test", 30);
+    InputField input_field(340, 570, 700, 50, 30);
 
     button.onClick = [&input_field, &lastExecutedText, &hasExecuted]() {
         SimulatePaperDislay(input_field.text);

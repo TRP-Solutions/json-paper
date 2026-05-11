@@ -20,8 +20,14 @@ void SetPixel(const PaperCommand& command) {
     if (!ParseColor(cs, color)) return;
 
 
-    log(WARNING, cs.c_str());
+    if (x < 0 || y < 0 ||
+    x >= Paint.Width ||
+    y >= Paint.Height) {
+        log(WARNING,"Input exceeds the normal display range for 'set_pixel'");
+
+        return;
+    }
 
 
-    Paint_SetPixel(x, y, color);
+    Paint_SetPixel(x+1, y+1, color);
 }

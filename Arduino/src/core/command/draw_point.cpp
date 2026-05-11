@@ -27,10 +27,10 @@ void DrawPoint(const PaperCommand& command) {
         !ParseDotStyle(ss, style)) return;
 
     if (x < 0 || y < 0 ||
-        x > Paint.Width || y > Paint.Height) {
+        x >= Paint.Width || y >= Paint.Height) {
         log(WARNING, "Input exceeds the normal display range for 'draw_point'");
 
         return;
         }
-    Paint_DrawPoint(x, y, color, width, style);
+    Paint_DrawPoint(x+1, y+1, color, width, style);
 }
