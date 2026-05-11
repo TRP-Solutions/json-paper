@@ -1,6 +1,5 @@
 #ifndef E_PAPER_EMULATOR_DEBUG_H
 #define E_PAPER_EMULATOR_DEBUG_H
-#include <string>
 
 enum LogLevel {
     FATAL,

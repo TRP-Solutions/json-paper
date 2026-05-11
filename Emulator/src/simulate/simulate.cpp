@@ -3,7 +3,7 @@
 #include "canvas/gui_paint.h"
 #include "config/dev_config.h"
 #include "core/core.h"
-#include "debug/debug.h"
+#include "debug_custom/debug.h"
 #include "e-paper/epd_5in79g.h"
 #include "gui/gui_raylib.h"
 

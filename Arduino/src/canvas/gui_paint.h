@@ -78,7 +78,7 @@
 #ifndef __GUI_PAINT_H
 #define __GUI_PAINT_H
 
-#include "../debug/debug.h"
+#include "../debug_custom/debug.h"
 #include "../font/fonts.h"
 
 /**

@@ -1,4 +1,4 @@
-#include "../../Arduino/src/debug/debug.h"
+#include "../../Arduino/src/debug_custom/debug.h"
 
 #include "manager/console_manager.h"
 

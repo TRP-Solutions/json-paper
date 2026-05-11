@@ -1,14 +1,11 @@
 cmake_minimum_required(VERSION 4.0)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_DEBUG=0")
-add_compile_definitions(_GLIBCXX_DEBUG=0)
-
 project(e_paper_emulator)
 
 include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
-set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied emulation games
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
 
 
 FetchContent_Declare(
@@ -48,7 +45,9 @@ set(SOURCES
         src/util/dev/console/command/commands/core_command.cpp
         src/manager/console_manager.cpp
         src/ui/input_field.cpp
+        src/ui/button.cpp
         src/gui/gui_raylib.cpp
+        src/simulate/simulate.cpp
 
         ${ARDUINO_DIR}/src/core/core.cpp
         ${ARDUINO_DIR}/src/canvas/gui_paint.cpp
@@ -60,13 +59,25 @@ set(SOURCES
         ${ARDUINO_DIR}/src/e-paper/paper_command.cpp
         ${ARDUINO_DIR}/src/util/base_64_decode.cpp
         ${ARDUINO_DIR}/src/core/command/helper.cpp
-
+        ${ARDUINO_DIR}/src/core/command/clear.cpp
+        ${ARDUINO_DIR}/src/core/command/set_rotate.cpp
+        ${ARDUINO_DIR}/src/core/command/set_mirroring.cpp
+        ${ARDUINO_DIR}/src/core/command/set_pixel.cpp
+        ${ARDUINO_DIR}/src/core/command/clear_window.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_point.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_line.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_rectangle.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_circle.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_image.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_char.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_num.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_time.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_string.cpp
 
 )
 set(HEADERS
         src/gui/gui_raylib.h
         src/ui/input_field.h
-        src/ui/button.cpp
         src/ui/button.h
         src/util/dev/console/console.h
         src/util/dev/console/command/registry.h
@@ -74,35 +85,35 @@ set(HEADERS
         src/util/dev/console/command/commands/core_command.h
         src/manager/console_manager.h
 
-        ${ARDUINO_DIR}/src/debug/debug.h
+        ${ARDUINO_DIR}/src/debug_custom/debug.h
         ${ARDUINO_DIR}/src/core/core.h
         ${ARDUINO_DIR}/src/network/request.h
         ${ARDUINO_DIR}/src/e-paper/paper_command.h
         ${ARDUINO_DIR}/src/font/fonts.h
         ${ARDUINO_DIR}/src/canvas/gui_paint.h
-        src/simulate/simulate.cpp
         src/simulate/simulate.h
-        ../Arduino/src/core/command/clear.cpp
-        ../Arduino/src/core/command/set_rotate.cpp
-        ../Arduino/src/core/command/set_mirroring.cpp
-        ../Arduino/src/core/command/set_pixel.cpp
-        ../Arduino/src/core/command/clear_window.cpp
-        ../Arduino/src/core/command/draw_point.cpp
-        ../Arduino/src/core/command/draw_line.cpp
-        ../Arduino/src/core/command/draw_rectangle.cpp
-        ../Arduino/src/core/command/draw_circle.cpp
-        ../Arduino/src/core/command/draw_image.cpp
-        ../Arduino/src/core/command/draw_char.cpp
-        ../Arduino/src/core/command/draw_num.cpp
-        ../Arduino/src/core/command/draw_time.cpp
-        ../Arduino/src/core/command/draw_string.cpp
+
 )
 
 set(CMAKE_CXX_STANDARD 20)
 
 if(WIN32)
     add_executable(e_paper_emulator WIN32 ${SOURCES} ${HEADERS})
-    target_link_options(e_paper_emulator PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+
+    if(MSVC)
+        target_link_options(e_paper_emulator PRIVATE
+                "/SUBSYSTEM:WINDOWS"
+                "/ENTRY:mainCRTStartup"
+        )
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_link_options(e_paper_emulator PRIVATE
+                "-Wl,--subsystem,windows"
+        )
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_link_options(e_paper_emulator PRIVATE
+                "-Wl,--subsystem,windows"
+        )
+    endif()
 elseif(APPLE)
     add_executable(e_paper_emulator MACOSX_BUNDLE ${SOURCES} ${HEADERS})
 elseif(UNIX AND NOT APPLE)
@@ -111,12 +122,12 @@ endif()
 
 if(ARDUINO)
     target_sources(e_paper_emulator PRIVATE
-            ${ARDUINO_DIR}/src/debug/debug.cpp
+            ${ARDUINO_DIR}/src/debug_custom/debug.cpp
             ${ARDUINO_DIR}/src/network/request.cpp
     )
 else()
     target_sources(e_paper_emulator PRIVATE
-            src/debug/debug.cpp
+            src/debug_custom/debug.cpp
             src/network/request.cpp
     )
 endif()

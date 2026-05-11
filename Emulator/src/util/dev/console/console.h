@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "raylib.h"
-#include "debug/debug.h"
+#include "debug_custom/debug.h"
 #include "util/dev/console/command/registry.h"
 
 #define CONSOLE_MAX_LOG 1000

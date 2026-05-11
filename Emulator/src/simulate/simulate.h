@@ -4,6 +4,7 @@
 
 #ifndef E_PAPER_EMULATOR_SIMULATE_H
 #define E_PAPER_EMULATOR_SIMULATE_H
+#include <algorithm>
 #include <string>
 
 int SimulatePaperDislay(std::string link);
