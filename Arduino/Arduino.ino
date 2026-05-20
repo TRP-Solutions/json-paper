@@ -1,4 +1,3 @@
-#pragma GCC diagnostic warning "-fexceptions"
 #include "WiFiS3.h"
 #include <EEPROM.h>
 #include "arduino_secrets.h"

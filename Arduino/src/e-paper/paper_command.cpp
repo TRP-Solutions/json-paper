@@ -1,7 +1,5 @@
 #include "paper_command.h"
 
-#include <iostream>
-
 #include "../core/core.h"
 
 std::unordered_map<std::string, CmdHandler> cmdMap = {
@@ -60,6 +58,6 @@ void execute_command(const PaperCommand& command) {
     if (it != cmdMap.end()) {
         it->second(command);
     } else {
-        std::cout << "Unknown command: " << command.name << "\n";
+        log(WARNING, ("Unknown command: " + command.name + "\n").c_str());
     }
 }

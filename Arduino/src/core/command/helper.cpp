@@ -32,14 +32,17 @@ bool GetOptionalArg(const PaperCommand& cmd, const std::string& key, std::string
 }
 
 bool ParseInt(const std::string& s, int& out) {
-    try {
-        out = std::stoi(s);
-        return true;
-    } catch (...) {
-        log(WARNING, ("invalid int: " + s).c_str());
+    char* end;
 
+    long value = strtol(s.c_str(), &end, 10);
+
+    if (*end != '\0') {
+        log(WARNING, ("invalid int: " + s).c_str());
         return false;
     }
+
+    out = static_cast<int>(value);
+    return true;
 }
 
 bool ParseDotPixel(const std::string& s, DOT_PIXEL& out) {
