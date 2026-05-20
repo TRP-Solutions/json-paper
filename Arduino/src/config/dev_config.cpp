@@ -60,7 +60,7 @@ UBYTE DEV_Module_Init(void)
 	GPIO_Config();
 
 	//serial printf
-	Serial.begin(115200);
+	//Serial.begin(115200);
 
 	// spi
 	SPI.begin();

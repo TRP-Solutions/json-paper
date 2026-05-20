@@ -141,14 +141,12 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
         countCmd++;
 
         if (item.containsKey("args")) {
-
             JsonObject args = item["args"];
 
             for (JsonPair kv : args) {
-
                 std::string key = kv.key().c_str();
 
-                std::string value = kv.value().as<const char*>();
+                std::string value = kv.value().as<String>().c_str();
 
                 command.args[key] = value;
 
