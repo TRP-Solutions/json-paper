@@ -137,7 +137,7 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
 
         Serial.print("   • ");
         Serial.println(command.name.c_str());
-
+        
         countCmd++;
 
         if (item.containsKey("args")) {
@@ -146,7 +146,7 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
             for (JsonPair kv : args) {
                 std::string key = kv.key().c_str();
 
-                std::string value = kv.value().as<String>().c_str();
+                std::string value = kv.value().as<std::string>().c_str();
 
                 command.args[key] = value;
 

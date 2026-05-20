@@ -50,15 +50,22 @@ void setup() {
   prevBtnState = digitalRead(BUTTON_PIN);
 
 
-  EPD_5in79g_test();
 }
 
 
 void loop() {
-  // if (canClickBtn) ButtonClick();
-  // if (!canClickBtn && !configMode && status != WL_CONNECTED && (!connectFail || isSaved)) WiFiConnect();
+  if (canClickBtn) ButtonClick();
+  if (!canClickBtn && !configMode && status != WL_CONNECTED && (!connectFail || isSaved)) WiFiConnect();
+  if (configMode) APConnect();
+  if (configMode && !isSaved) updateLED();
+
+
+  //   configMode = true;
+  //   isSaved = false;
+  //   canClickBtn = false;
+
   // if (configMode) APConnect();
-  // if (configMode && !isSaved) updateLED();
+  // if (!canClickBtn && !configMode && status != WL_CONNECTED && (!connectFail || isSaved)) WiFiConnect();
 }
 
 
@@ -83,7 +90,7 @@ int EPD_5in79g_test(void)
     }
 
     Serial.println("NewImage:BlackImage and RYImage\r\n");
-    Paint_NewImage(BlackImage, EPD_5in79G_WIDTH, EPD_5in79G_HEIGHT, 0, WHITE);
+    Paint_NewImage(BlackImage, EPD_5in79G_WIDTH / 2, EPD_5in79G_HEIGHT / 2, 0, WHITE);
     Serial.println("create new iamge\r\n");
     Paint_SetScale(4);
     Serial.println("set scale to 4\r\n");
@@ -96,6 +103,7 @@ int EPD_5in79g_test(void)
 
     Serial.println("e-Paper draw from endpoint\r\n");
     draw_epd_5in79g_remote("http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/");
+    Serial.println("Finished call cmd");
 
 // #if 1   // show bmp
 //     Serial.println("show red bmp------------------------\r\n");
@@ -401,7 +409,7 @@ void WiFiConnect() {
     Serial.print("   • IP: ");
     Serial.println(WiFi.localIP());
     connectFail = false;
-    draw_epd_5in79g_remote("http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/");
+    EPD_5in79g_test();
   } else {
     Serial.println("✗ Error no connection");
     connectFail = true;
