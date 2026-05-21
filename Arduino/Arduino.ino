@@ -3,7 +3,6 @@
 #include "arduino_secrets.h"
 #include <ArduinoJson.h>
 #include "src/core/core.h"
-// #include "src/config/dev_config.h"
 #include "src/e-paper/epd_5in79g.h"
 
 char ssid[] = SECRET_SSID;
@@ -24,15 +23,16 @@ String passName = "passInput";
 bool isSaved = false;
 bool connectFail = false;
 
-bool jsonErr = false;
-
 bool configMode = false;
 bool canClickBtn = true;
 
 // Button
-#define BUTTON_PIN 12  // The Arduino UNO R4 pin connected to the button
+#define BUTTON_PIN 12  
 int newBtnState;    // the current state of button
 int prevBtnState;
+
+// Url with json commands to draw EPD-picture
+std::string jsonUrl = "http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/";
 
 
 void setup() {
@@ -48,8 +48,6 @@ void setup() {
   // initialize the pushbutton pin as a pull-up input
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   prevBtnState = digitalRead(BUTTON_PIN);
-
-
 }
 
 
@@ -58,26 +56,19 @@ void loop() {
   if (!canClickBtn && !configMode && status != WL_CONNECTED && (!connectFail || isSaved)) WiFiConnect();
   if (configMode) APConnect();
   if (configMode && !isSaved) updateLED();
-
-
-  //   configMode = true;
-  //   isSaved = false;
-  //   canClickBtn = false;
-
-  // if (configMode) APConnect();
-  // if (!canClickBtn && !configMode && status != WL_CONNECTED && (!connectFail || isSaved)) WiFiConnect();
 }
 
 
-
-int EPD_5in79g_test(void)
+int EPD_5in79g_paint(void)
 {
-    Serial.println("EPD_5in79g_test Demo\r\n");
+    Serial.println("Starting process to draw EPD-picture\r\n");
     if(DEV_Module_Init()!=0){
         return -1;
     }
 
     EPD_5in79g_Init();
+
+    // Clear screen
     EPD_5in79g_Clear(EPD_5in79G_WHITE);
     DEV_Delay_ms(500);
 
@@ -89,72 +80,41 @@ int EPD_5in79g_test(void)
         return -1;
     }
 
-    Serial.println("NewImage:BlackImage and RYImage\r\n");
+    Serial.println("Create new image with properties\r\n");
     Paint_NewImage(BlackImage, EPD_5in79G_WIDTH / 2, EPD_5in79G_HEIGHT / 2, 0, WHITE);
-    Serial.println("create new iamge\r\n");
+    Serial.println("Set scale to 4\r\n");
     Paint_SetScale(4);
-    Serial.println("set scale to 4\r\n");
 
     //Select Image
-    Serial.println("selected image\r\n");
+    Serial.println("Selected image\r\n");
     Paint_SelectImage(BlackImage);
-    Serial.println("clear image frame buffer\r\n");
+
+    // Clear the color of the picture
+    Serial.println("Clear image frame buffer\r\n");
     Paint_Clear(WHITE);
 
     Serial.println("e-Paper draw from endpoint\r\n");
-    draw_epd_5in79g_remote("http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/");
-    Serial.println("Finished call cmd");
+    draw_epd_5in79g_remote(jsonUrl);
 
-// #if 1   // show bmp
-//     Serial.println("show red bmp------------------------\r\n");
-//     EPD_5in79g_Display(gImage_5in79g);
-//     DEV_Delay_ms(2000);
-// #endif
+    Serial.println("\r\nEPD-Display\r\n");
+    EPD_5in79g_Display_Partial(BlackImage);
+    DEV_Delay_ms(3000);
 
-// #if 1   // Drawing on the image
-//     //1.Select Image
-//     Serial.println("SelectImage:BlackImage\r\n");
-//     Paint_SelectImage(BlackImage);
-//     Paint_Clear(EPD_5in79G_WHITE);
+    Serial.println("Goto Sleep...\r\n");
+    EPD_5in79g_Sleep();
+    free(BlackImage);
+    BlackImage = NULL;
 
-//     // 2.Drawing on the image
-//     Serial.println("Drawing:BlackImage\r\n");
-//     Paint_DrawPoint(10, 80, EPD_5in79G_BLACK, DOT_PIXEL_1X1, DOT_STYLE_DFT);
-//     Paint_DrawPoint(10, 90, EPD_5in79G_YELLOW, DOT_PIXEL_2X2, DOT_STYLE_DFT);
-//     Paint_DrawPoint(10, 100, EPD_5in79G_RED, DOT_PIXEL_3X3, DOT_STYLE_DFT);
-//     Paint_DrawLine(20, 70, 70, 120, EPD_5in79G_BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-//     Paint_DrawLine(70, 70, 20, 120, EPD_5in79G_BLACK, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-//     Paint_DrawRectangle(20, 70, 70, 120, EPD_5in79G_YELLOW, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-//     Paint_DrawRectangle(80, 70, 130, 120, EPD_5in79G_BLACK, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-//     Paint_DrawCircle(45, 95, 20, EPD_5in79G_RED, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-//     Paint_DrawCircle(105, 95, 20, EPD_5in79G_RED, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-//     Paint_DrawLine(85, 95, 125, 95, EPD_5in79G_BLACK, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
-//     Paint_DrawLine(105, 75, 105, 115, EPD_5in79G_WHITE, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
-//     Paint_DrawString_EN(10, 10, "Red, yellow, white and black", &Font16, EPD_5in79G_BLACK, EPD_5in79G_WHITE);
-//     Paint_DrawString_EN(10, 30, "Four color e-Paper", &Font12, EPD_5in79G_WHITE, EPD_5in79G_RED);
-//     Paint_DrawNum(10, 50, 123456, &Font12, EPD_5in79G_BLACK, EPD_5in79G_YELLOW);
+    // Important, at least 2s delay
+    DEV_Delay_ms(2000);
 
-//     Serial.println("EPD_Display\r\n");
-//     EPD_5in79g_Display_Partial(BlackImage);
-//     DEV_Delay_ms(3000);
-// #endif
+    // close 5V
+    Serial.println("Close 5V, Module enters 0 power consumption...\r\n");
+    DEV_Module_Exit();
 
-//     Serial.println("Clear...\r\n");
-//     EPD_5in79g_Clear(EPD_5in79G_WHITE);
-
-//     Serial.println("Goto Sleep...\r\n");
-//     EPD_5in79g_Sleep();
-//     free(BlackImage);
-//     BlackImage = NULL;
-//     DEV_Delay_ms(2000);//important, at least 2s
-//     // close 5V
-//     Serial.println("close 5V, Module enters 0 power consumption ...\r\n");
-//     DEV_Module_Exit();
-    
-//     return 0;
+    Serial.println("Finished process to draw EPD-picture");
+    return 0;
 }
-
-
 
 
 void ButtonClick() {
@@ -172,6 +132,7 @@ void ButtonClick() {
     canClickBtn = false;
   }
 }
+
 
 void updateLED() {
   // Fejl → konstant tændt
@@ -369,7 +330,6 @@ void APConnect() {
 }
 
 
-
 void WiFiConnect() {
 
  digitalWrite(led, LOW);
@@ -409,7 +369,7 @@ void WiFiConnect() {
     Serial.print("   • IP: ");
     Serial.println(WiFi.localIP());
     connectFail = false;
-    EPD_5in79g_test();
+    EPD_5in79g_paint();
   } else {
     Serial.println("✗ Error no connection");
     connectFail = true;
@@ -417,6 +377,7 @@ void WiFiConnect() {
   isSaved = false;
   updateLED();
 }
+
 
 void printWiFiStatus() {
   // print the SSID of the network you're attached to:
@@ -433,11 +394,13 @@ void printWiFiStatus() {
   Serial.println(ip);
 }
 
+
 void clearEEPROM() {
   for (int i = 0; i < EEPROM.length(); i++) {
     EEPROM.write(i, '\0');
   }
 }
+
 
 void saveEEPROM(String value) {
   for (int i = 0; i < value.length(); i++) {
@@ -445,6 +408,7 @@ void saveEEPROM(String value) {
   }
   EEPROM.write(value.length(), '\0'); // afslut string
 }
+
 
 String readEEPROM()
 {
@@ -458,7 +422,6 @@ String readEEPROM()
 
   return String(data);
 }
-
 
 
 String urlDecode(String input) {
@@ -481,7 +444,3 @@ String urlDecode(String input) {
   
   return output;
 }
-
-
-
-

@@ -122,8 +122,7 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
         return commands;
     }
 
-    JsonArray jsonCommands =
-        doc["commands"];
+    JsonArray jsonCommands = doc["commands"];
 
     int countCmd = 1;
 
@@ -146,6 +145,7 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
             for (JsonPair kv : args) {
                 std::string key = kv.key().c_str();
 
+                // std::string value = kv.value().as<const char*>();
                 std::string value = kv.value().as<std::string>().c_str();
 
                 command.args[key] = value;
