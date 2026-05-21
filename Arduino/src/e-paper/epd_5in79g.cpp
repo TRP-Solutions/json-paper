@@ -76,7 +76,7 @@ parameter:
 ******************************************************************************/
 void EPD_5in79g_ReadBus(void)
 {
-    log(INFO, "e-Paper busy\r\n");
+    log(INFO, "e-Paper busy");
 	UBYTE busy;
 	do
 	{
@@ -85,7 +85,7 @@ void EPD_5in79g_ReadBus(void)
 	}
 	while(!busy);   
 	DEV_Delay_ms(200);     
-    log(INFO, "e-Paper busy release\r\n");
+    log(INFO, "e-Paper busy release");
 }
 
 /******************************************************************************
