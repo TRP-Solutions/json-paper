@@ -18,64 +18,64 @@ $display
 	->clear(Color::WHITE)
 
 	->clearWindow(
-		10,
-		10,
-		80,
-		60,
-		Color::RED
+		x_start: 10,
+		y_start: 10,
+		x_end: 80,
+		y_end: 60,
+		color: Color::RED
 	)
 
 	->point(
-		20,
-		20,
-		Color::BLACK,
-		Width::W2,
-		PointStyle::AROUND
+		x: 20,
+		y: 20,
+		color: Color::BLACK,
+		width: Width::W2,
+		style: PointStyle::AROUND
 	)
 
 	->line(
-		0,
-		0,
-		100,
-		100,
-		Color::BLACK,
-		Width::W1,
-		LineStyle::SOLID
+		x_start: 0,
+		y_start: 0,
+		x_end: 100,
+		y_end: 100,
+		color: Color::BLACK,
+		width: Width::W1,
+		style: LineStyle::SOLID
 	)
 
 	->rectangle(
-		20,
-		70,
-		80,
-		80,
-		Color::YELLOW,
-		Width::W2,
-		FillMode::EMPTY
+		x_start: 20,
+		y_start: 70,
+		x_end: 80,
+		y_end: 80,
+		color: Color::YELLOW,
+		width: Width::W2,
+		fill: FillMode::EMPTY
 	)
 
 	->circle(
-		160,
-		80,
-		30,
-		Color::RED,
-		Width::W1,
-		FillMode::FULL
+		x: 160,
+		y: 80,
+		radius: 30,
+		color: Color::RED,
+		width: Width::W1,
+		fill: FillMode::FULL
 	)
 
 	->text(
-		10,
-		100,
-		"Hello World",
-		Font::FONT_16,
-		Color::BLACK,
-		Color::TRANSPARENT
+		x: 10,
+		y: 100,
+		text: "Hello World",
+		font: Font::FONT_16,
+		foreground: Color::BLACK,
+		background: Color::TRANSPARENT
 	)
 
 	->image(
-		10,
-		150,
-		$img,
-		Color::TRANSPARENT
+		x: 10,
+		Y: 150,
+		img: $img,
+		transparent: Color::TRANSPARENT
 	);
 
 $display->output();

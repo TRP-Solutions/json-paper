@@ -75,20 +75,20 @@ class Display
 	}
 
 	public function clearWindow(
-		int $xStart,
-		int $yStart,
-		int $xEnd,
-		int $yEnd,
+		int   $x_start,
+		int   $y_start,
+		int   $x_end,
+		int   $y_end,
 		Color $color
 	): self {
 
 		$this->commands[] = [
 			"cmd" => "clear_window",
 			"args" => [
-				"x_start" => $xStart,
-				"y_start" => $yStart,
-				"x_end" => $xEnd,
-				"y_end" => $yEnd,
+				"x_start" => $x_start,
+				"y_start" => $y_start,
+				"x_end" => $x_end,
+				"y_end" => $y_end,
 				"color" => $color
 			]
 		];
@@ -119,22 +119,22 @@ class Display
 	}
 
 	public function line(
-		int $xStart,
-		int $yStart,
-		int $xEnd,
-		int $yEnd,
-		Color $color = Color::BLACK,
-		Width $width = Width::W1,
+		int       $x_start,
+		int       $y_start,
+		int       $x_end,
+		int       $y_end,
+		Color     $color = Color::BLACK,
+		Width     $width = Width::W1,
 		LineStyle $style = LineStyle::SOLID
 	): self {
 
 		$this->commands[] = [
 			"cmd" => "draw_line",
 			"args" => [
-				"x_start" => $xStart,
-				"y_start" => $yStart,
-				"x_end" => $xEnd,
-				"y_end" => $yEnd,
+				"x_start" => $x_start,
+				"y_start" => $y_start,
+				"x_end" => $x_end,
+				"y_end" => $y_end,
 				"color" => $color,
 				"width" => $width,
 				"style" => $style
@@ -145,22 +145,22 @@ class Display
 	}
 
 	public function rectangle(
-		int $xStart,
-		int $yStart,
-		int $xEnd,
-		int $yEnd,
-		Color $color = Color::BLACK,
-		Width $width = Width::W1,
+		int      $x_start,
+		int      $y_start,
+		int      $x_end,
+		int      $y_end,
+		Color    $color = Color::BLACK,
+		Width    $width = Width::W1,
 		FillMode $fill = FillMode::EMPTY
 	): self {
 
 		$this->commands[] = [
 			"cmd" => "draw_rectangle",
 			"args" => [
-				"x_start" => $xStart,
-				"y_start" => $yStart,
-				"x_end" => $xEnd,
-				"y_end" => $yEnd,
+				"x_start" => $x_start,
+				"y_start" => $y_start,
+				"x_end" => $x_end,
+				"y_end" => $y_end,
 				"color" => $color,
 				"width" => $width,
 				"fill" => $fill
@@ -171,11 +171,11 @@ class Display
 	}
 
 	public function circle(
-		int $x,
-		int $y,
-		int $radius,
-		Color $color = Color::BLACK,
-		Width $width = Width::W1,
+		int      $x,
+		int      $y,
+		int      $radius,
+		Color    $color = Color::BLACK,
+		Width    $width = Width::W1,
 		FillMode $fill = FillMode::EMPTY
 	): self {
 
@@ -195,12 +195,12 @@ class Display
 	}
 
 	public function text(
-		int $x,
-		int $y,
+		int    $x,
+		int    $y,
 		string $text,
-		Font $font = Font::FONT_16,
-		Color $foreground = Color::BLACK,
-		Color $background = Color::TRANSPARENT
+		Font   $font = Font::FONT_16,
+		Color  $foreground = Color::BLACK,
+		Color  $background = Color::TRANSPARENT
 	): self {
 
 		$this->commands[] = [
@@ -219,10 +219,10 @@ class Display
 	}
 
 	public function image(
-		int $x,
-		int $y,
+		int      $x,
+		int      $y,
 		\Imagick $img,
-		Color $transparent = Color::TRANSPARENT
+		Color    $transparent = Color::TRANSPARENT
 	): self {
 
 		$converted = new Image($img);
