@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #include "src/core/core.h"
 #include "src/e-paper/epd_5in79g.h"
+#include "src/network/request.h"
 
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
@@ -37,7 +38,8 @@ unsigned long epdEndTime;
 unsigned long epdNextTime = 10;
 
 // Setup url with json commands to draw EPD-picture
-std::string jsonUrl = "http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/";
+// std::string jsonUrl = "http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/";
+std::string jsonUrl = "http://192.168.11.25/json_paper/";
 
 
 void setup() {
@@ -62,12 +64,14 @@ void loop() {
     if (status != WL_CONNECTED) WiFiConnect();
 
     if (millis() - epdEndTime >= 60000 * epdNextTime) {
-      Serial.println("10 minutes have passed");
+      Serial.println(String(epdNextTime) + " minutes have passed");
       EPD_5in79g_paint();
     }
   }
-  if (configMode) APConnect();
-  if (configMode && !isSaved) updateLED();
+  if (configMode) {
+    APConnect();
+    updateLED();
+  }
 }
 
 
@@ -135,14 +139,12 @@ int EPD_5in79g_paint(void) {
 
 
 void ButtonClick() {
-  // Read the state of the switch/button:
+  // Read the state of the button:
   newBtnState = digitalRead(BUTTON_PIN);
 
   if (prevBtnState == LOW && newBtnState == HIGH) {
     Serial.println("The button is released");
     configMode = true;
-    isSaved = false;
-    WiFi.disconnect();
   }
 
   if (prevBtnState != newBtnState || prevBtnState == HIGH) {
@@ -207,8 +209,7 @@ void APConnect() {
     if (WiFi.status() == WL_NO_MODULE) {
       Serial.println("Communication with WiFi module failed!");
       // Don't continue
-      while (true)
-        ;
+      while (true);
     }
 
     String fv = WiFi.firmwareVersion();
@@ -227,8 +228,7 @@ void APConnect() {
     if (status != WL_AP_LISTENING) {
       Serial.println("Creating access point failed");
       // Don't continue
-      while (true)
-        ;
+      while (true);
     }
 
     delay(1000);
@@ -303,38 +303,65 @@ void APConnect() {
             }
 
             client.println("HTTP/1.1 200 OK");
-            client.println("Content-type:text/html");
+            client.println("Content-Type: text/html; charset=utf-8");
+            client.println("Connection: close");
             client.println();
 
-            client.println("<body style='background:#1f272a;color:white;'>");
-            client.println("<h1>JSON-Paper Webserver</h1>");
+
+  client.println("<!DOCTYPE html>");
+  client.println("<html lang='en'>");
+  client.println("<head>");
+  client.println("<meta charset='UTF-8' />");
+  client.println("<meta name='viewport' content='width=device-width, initial-scale=1.0' />");
+  client.println("<title>WiFi Configuration</title>");
+  client.println("<style>");
+
+            cssPrint(client);
+  client.println("</style>");
+
+
+            client.println("<body>");
+            // client.println("<h1>JSON-Paper Webserver</h1>");
+            client.println("<div class='container'>");
 
             if (!isSaved) {
-              client.println("<form method='POST' action='/'>");
-              client.println("<input type='text' name='" + ssidName + "' placeholder='SSID' required>");
-              client.println("<input type='text' name='" + passName + "' placeholder='Password' required>");
+              client.println("<form id='wifiForm' method='POST' action='/'>");
+              if (currentLine.startsWith("GET /logo.svg")) {
+                svgPrint(client);
+                break;
+              }
+              client.println("<img src='/logo.svg' alt='Logo' draggable='false'>");
+              client.println("<p>Wifi configuration</p>");
+              client.println("<input id='ssid' type='text' name='" + ssidName + "' placeholder='SSID' required>");
+              client.println("<input id='password' type='password' name='" + passName + "' placeholder='Password' required>");
               client.println("<br>");
-              client.println("<input type='submit' value='Connect'>");
+              client.println("<input id='connectBtn' type='submit' value='Connect' />");
               client.println("</form>");
             } else {
-              client.println("<h3>Trying to connect to WiFi...</h3>");
-              client.println("<ul>");
-              client.println("<li>SSID: " + ssidAP + "</li>");
-              String hidePassAP = "";
-              for (int i = 0; i < passAP.length(); i++) {
-                hidePassAP += "*";
-              }
-              client.println("<li>Password: " + hidePassAP + "</li>");
-              client.println("</ul>");
-              client.println("<br>");
-              client.println("<p><i>No orange light = Connected</i></p>");
-              client.println("<p><i>Orange light = Not connected</i></p>");
-              configMode = false;
+                client.println("<div class='wifi-status'>");
+                client.println("<img src='/logo.svg' alt='Logo' draggable='false'>");
+                client.println("<p>Wifi configuration</p>");
+                client.println("<ul>");
+                client.println("<li>SSID: " + ssidAP + "</li>");
+                String hidePassAP = "";
+                for (int i = 0; i < passAP.length(); i++) {
+                  hidePassAP += "*";
+                }
+                client.println("<li>Password: " + hidePassAP + "</li>");
+                client.println("</ul>");
+                client.println("<div class='loading-row' aria-label='Loading'>");
+                client.println("<div class='spinner'></div>");
+                client.println("</div>");
+                client.println("<p><i>No orange light = Connected</i></p>");
+                client.println("<p><i>Orange light = Not connected</i></p>");
+                client.println("</div>");
+
+                configMode = false;
             }
+              client.println("</div>");
 
-
-            client.println("</body>");
-            client.println();
+              client.println("</body>");
+              client.println("</html>");
             break;
           }
 
@@ -384,8 +411,7 @@ void WiFiConnect() {
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("✓ Connected");
-    while (WiFi.localIP() == "0.0.0.0")
-      ;
+    while (WiFi.localIP() == "0.0.0.0");
     Serial.print("   • IP: ");
     Serial.println(WiFi.localIP());
     connectFail = false;
@@ -394,6 +420,7 @@ void WiFiConnect() {
     Serial.println("✗ Error no connection");
     connectFail = true;
   }
+
   isSaved = false;
   updateLED();
 }
@@ -459,4 +486,193 @@ String urlDecode(String input) {
   }
 
   return output;
+}
+
+
+
+
+
+void cssPrint(WiFiClient& client) {
+  client.println(R"CSS(
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: "Montserrat", sans-serif;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    form,
+    .wifi-status {
+      width: min(420px, calc(100vw - 32px));
+      background: hsl(237.05deg 10.48% 30.48% / 42%);
+      background: hsl(237.05deg 33.32% 19.96% / 26%);
+      padding: 3em;
+      border-radius: 20px;
+      border-left: 1px solid rgba(255, 255, 255, 0.3);
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      box-shadow: 20px 20px 40px -6px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      transition: all 0.2s ease-in-out;
+    }
+
+    img {
+      display: block;
+      width: 70%;
+      margin: 0 auto 50px auto;
+      user-select: none;
+    }
+
+    form p,
+    .wifi-status > p:first-of-type {
+      font-weight: bold;
+      color: hsl(227 6% 41% / 1);
+      font-size: 1.2rem;
+      text-align: left;
+      margin: 0 auto 20px auto;
+      width: 215px;
+    }
+
+    form input {
+      background: transparent;
+      width: 215px;
+      padding: 1em;
+      margin: 0 auto 2em auto;
+      border: none;
+      border-left: 1px solid rgba(255, 255, 255, 0.3);
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 5000px;
+      backdrop-filter: blur(5px);
+      box-shadow: 4px 4px 60px rgba(0, 0, 0, 0.2);
+      color: #fff;
+      font-family: "Montserrat", sans-serif;
+      font-weight: 500;
+      transition: all 0.2s ease-in-out;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      outline: none;
+      display: block;
+    }
+
+    form input:hover {
+      background: rgb(0 0 0 / 10%);
+      box-shadow: 4px 4px 60px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    form input:focus {
+      background: rgb(0 0 0 / 10%);
+      box-shadow: 4px 4px 60px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    form input[type="submit"] {
+      margin-top: 10px;
+      width: 150px;
+      font-size: 1rem;
+    }
+
+    form input[type="submit"]:hover {
+      cursor: pointer;
+    }
+
+    form input[type="submit"]:active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    ::placeholder {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 400;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .wifi-status {
+      color: #fff;
+      text-align: center;
+    }
+
+    .wifi-status > * {
+      width: 215px;
+      margin: 0 auto 16px auto;
+      display: block;
+    }
+
+    .wifi-status img {
+      width: 70%;
+      margin: 0 auto 40px auto;
+    }
+
+    .wifi-status h1 {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: hsl(227 6% 41% / 1);
+      text-align: left;
+      line-height: 1.3;
+    }
+
+    .wifi-status h3 {
+      margin-top: 0;
+      font-size: 1rem;
+      color: #d1d5db;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .wifi-status ul {
+      padding: 0 0 0 20px;
+      text-align: left;
+      list-style-position: outside;
+    }
+
+    .wifi-status li {
+      margin: 0 0 10px 0;
+      color: #000000;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .wifi-status span,
+    .wifi-status p,
+    .wifi-status i {
+      text-align: left;
+      color: hsl(227 6% 41% / 1);
+      line-height: 1.45;
+    }
+
+    .loading-row {
+      justify-content: center;
+      align-items: center;
+      width: 197px;
+      margin: 18px auto 10px auto;
+      min-height: 40px;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 4px solid rgba(255, 255, 255, 0.25);
+      border-top: 4px solid #ffffff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+  )CSS");
+}
+
+void svgPrint(WiFiClient& client) {
 }

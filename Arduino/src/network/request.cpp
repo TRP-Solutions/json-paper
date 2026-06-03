@@ -63,10 +63,8 @@ std::string httpGet(std::string host, std::string path) {
         client->print("GET ");
         client->print(path.c_str());
         client->println(" HTTP/1.1");
-
         client->print("Host: ");
         client->println(host.c_str());
-
         client->println("Connection: close");
         client->println();
 
@@ -92,6 +90,9 @@ std::string httpGet(std::string host, std::string path) {
         Serial.println("Connection failed");
     }
 
+    Serial.println("Return response");
+    Serial.println(response.length());
+
     return response;
 }
 
@@ -99,9 +100,7 @@ std::string httpGet(std::string host, std::string path) {
 std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
 
     std::string path;
-
     std::string host = NormalizeHost(addr, path);
-
     std::string body = httpGet(host, path);
 
     std::vector<PaperCommand> commands;
@@ -111,8 +110,7 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
         return commands;
     }
 
-    StaticJsonDocument<2048> doc;
-
+    JsonDocument doc;
     DeserializationError error = deserializeJson(doc, body.c_str());
 
     if (error) {
@@ -123,7 +121,7 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
     }
 
     JsonArray jsonCommands = doc["commands"];
-
+    Serial.println("jsonCommands");
     int countCmd = 1;
 
     for (JsonObject item : jsonCommands) {
@@ -147,17 +145,26 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
 
                 // std::string value = kv.value().as<const char*>();
                 std::string value = kv.value().as<std::string>().c_str();
+                Serial.print("      inserting: ");
+                Serial.println(key.c_str());
 
                 command.args[key] = value;
+                Serial.println("      inserted OK");
 
                 Serial.print("      ");
                 Serial.print(key.c_str());
                 Serial.print(" = ");
                 Serial.println(value.c_str());
+
+                Serial.println("      arg stored");
             }
+            Serial.println("command complete");
         }
+        Serial.print("commands size = ");
+        Serial.println(jsonCommands.size());
 
         commands.push_back(command);
+        Serial.println("push done");
     }
 
     return commands;
