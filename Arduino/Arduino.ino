@@ -5,6 +5,7 @@
 #include "src/core/core.h"
 #include "src/e-paper/epd_5in79g.h"
 #include "src/network/request.h"
+#include "logo.h"
 
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
@@ -38,7 +39,6 @@ unsigned long epdEndTime;
 unsigned long epdNextTime = 10;
 
 // Setup url with json commands to draw EPD-picture
-// std::string jsonUrl = "http://192.168.11.65/-_TRP_iot/-_e_paper_print_json/";
 std::string jsonUrl = "http://192.168.11.25/json_paper/";
 
 
@@ -308,38 +308,31 @@ void APConnect() {
             client.println();
 
 
-  client.println("<!DOCTYPE html>");
-  client.println("<html lang='en'>");
-  client.println("<head>");
-  client.println("<meta charset='UTF-8' />");
-  client.println("<meta name='viewport' content='width=device-width, initial-scale=1.0' />");
-  client.println("<title>WiFi Configuration</title>");
-  client.println("<style>");
-
+            client.println("<!DOCTYPE html>");
+            client.println("<html lang='en'>");
+            client.println("<head>");
+            client.println("<meta charset='UTF-8' />");
+            client.println("<meta name='viewport' content='width=device-width, initial-scale=1.0' />");
+            client.println("<title>WiFi Configuration</title>");
+            client.println("<style>");
             cssPrint(client);
-  client.println("</style>");
+            client.println("</style>");
 
 
             client.println("<body>");
-            // client.println("<h1>JSON-Paper Webserver</h1>");
             client.println("<div class='container'>");
 
             if (!isSaved) {
               client.println("<form id='wifiForm' method='POST' action='/'>");
-              if (currentLine.startsWith("GET /logo.svg")) {
-                svgPrint(client);
-                break;
-              }
-              client.println("<img src='/logo.svg' alt='Logo' draggable='false'>");
+              client.println(logoSvg);
               client.println("<p>Wifi configuration</p>");
               client.println("<input id='ssid' type='text' name='" + ssidName + "' placeholder='SSID' required>");
               client.println("<input id='password' type='password' name='" + passName + "' placeholder='Password' required>");
-              client.println("<br>");
               client.println("<input id='connectBtn' type='submit' value='Connect' />");
               client.println("</form>");
             } else {
                 client.println("<div class='wifi-status'>");
-                client.println("<img src='/logo.svg' alt='Logo' draggable='false'>");
+                client.println(logoSvg);
                 client.println("<p>Wifi configuration</p>");
                 client.println("<ul>");
                 client.println("<li>SSID: " + ssidAP + "</li>");
@@ -489,9 +482,6 @@ String urlDecode(String input) {
 }
 
 
-
-
-
 void cssPrint(WiFiClient& client) {
   client.println(R"CSS(
     body {
@@ -509,6 +499,14 @@ void cssPrint(WiFiClient& client) {
       align-items: center;
     }
 
+    form {
+      min-height: 389.325px;
+    }
+
+    .wifi-status {
+      min-height: 362.538px;
+    }
+
     form,
     .wifi-status {
       width: min(420px, calc(100vw - 32px));
@@ -524,7 +522,7 @@ void cssPrint(WiFiClient& client) {
       transition: all 0.2s ease-in-out;
     }
 
-    img {
+    svg {
       display: block;
       width: 70%;
       margin: 0 auto 50px auto;
@@ -603,7 +601,7 @@ void cssPrint(WiFiClient& client) {
       display: block;
     }
 
-    .wifi-status img {
+    .wifi-status svg {
       width: 70%;
       margin: 0 auto 40px auto;
     }
@@ -672,7 +670,4 @@ void cssPrint(WiFiClient& client) {
     }
 
   )CSS");
-}
-
-void svgPrint(WiFiClient& client) {
 }

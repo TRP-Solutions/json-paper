@@ -73,7 +73,7 @@ $display
 
 	->image(
 		x: 10,
-		Y: 150,
+		y: 150,
 		img: $img,
 		transparent: Color::TRANSPARENT
 	);
