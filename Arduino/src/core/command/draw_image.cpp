@@ -2,22 +2,29 @@
 
 #include "../../canvas/gui_paint.h"
 #include "../../config/dev_config.h"
+#include "../../e-paper/paper_command.h"
 #include "../core.h"
 
 std::vector<uint8_t> Base64Decode(const std::string & string);
 
 void DrawImage(const PaperCommand& command) {
-    std::string xs, ys, ws, hs, dataStr, transparentStr;
+    std::string xs, ys, ws, hs, transparentStr;
 
     if (!GetRequiredArg(command, "x", xs) ||
         !GetRequiredArg(command, "y", ys) ||
         !GetRequiredArg(command, "width", ws) ||
-        !GetRequiredArg(command, "height", hs) ||
-        !GetRequiredArg(command, "data", dataStr)) {
+        !GetRequiredArg(command, "height", hs)) {
             log(WARNING, "Missing required args for 'draw_image'");
 
             return;
     }
+
+    auto dataIt = command.args.find("data");
+    if (dataIt == command.args.end()) {
+        log(WARNING, "Missing required args for 'draw_image'");
+        return;
+    }
+    const std::string& dataStr = dataIt->second;
 
     int x, y, width, height;
     if (!ParseInt(xs, x) || !ParseInt(ys, y) ||

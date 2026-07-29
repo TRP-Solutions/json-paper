@@ -63,7 +63,7 @@ UBYTE DEV_Module_Init(void)
 	//Serial.begin(115200);
 
 	// spi
-	SPI.begin();
+	SPI.begin(EPD_SCK_PIN, -1, EPD_MOSI_PIN, EPD_CS_PIN);
     SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
 
 	return 0;
@@ -79,7 +79,7 @@ void DEV_GPIO_Init(void)
 
 void DEV_SPI_Init(void)
 {
-    SPI.begin();
+    SPI.begin(EPD_SCK_PIN, -1, EPD_MOSI_PIN, EPD_CS_PIN);
     SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
 }
 
@@ -141,4 +141,3 @@ void DEV_Module_Exit(void)
 {
     digitalWrite(EPD_PWR_PIN , LOW);
 }
-

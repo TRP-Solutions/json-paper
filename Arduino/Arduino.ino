@@ -1,16 +1,21 @@
-#include "WiFiS3.h"
+#include <WiFi.h>
 #include <EEPROM.h>
+#include <esp32-hal-psram.h>
 #include "arduino_secrets.h"
 #include <ArduinoJson.h>
 #include "src/core/core.h"
 #include "src/e-paper/epd_5in79g.h"
+#include "src/e-paper/paper_command.h"
 #include "src/network/request.h"
 #include "logo.h"
 
-char ssid[] = SECRET_SSID;
-char pass[] = SECRET_PASS;
+char ssid[] = CONFIG_AP_SSID;
+char pass[] = CONFIG_AP_PASSWORD;
 
-int led = LED_BUILTIN;
+#define RGB_LED_PIN 27
+#define BUTTON_PIN 5
+#define EEPROM_SIZE 512
+
 int status = WL_IDLE_STATUS;
 WiFiServer server(80);
 
@@ -26,10 +31,9 @@ bool isSaved = false;
 bool connectFail = false;
 
 bool configMode = false;
-bool canClickBtn = true;
+bool apStarted = false;
 
 // Button
-#define BUTTON_PIN 12
 int newBtnState;  // the current state of button
 int prevBtnState;
 
@@ -39,7 +43,7 @@ unsigned long epdEndTime;
 unsigned long epdNextTime = 10;
 
 // Setup url with json commands to draw EPD-picture
-std::string jsonUrl = "http://192.168.11.25/json_paper/";
+std::string jsonUrl = "http://192.168.11.60:8080/";
 
 
 void setup() {
@@ -47,10 +51,21 @@ void setup() {
   Serial.begin(9600);
   delay(1000);
 
+  Serial.print("PSRAM detected: ");
+  Serial.println(psramFound() ? "yes" : "no");
+
+  Serial.print("PSRAM size: ");
+  Serial.println(ESP.getPsramSize());
+
+  Serial.print("Free PSRAM: ");
+  Serial.println(ESP.getFreePsram());
+
   LogTitle("Start JSON-Paper");
 
-  // Set the LED pin mode
-  pinMode(led, OUTPUT);
+  if (!EEPROM.begin(EEPROM_SIZE)) {
+    Serial.println("Failed to initialize EEPROM");
+    connectFail = true;
+  }
 
   // Initialize the pushbutton pin as a pull-up input
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -59,8 +74,8 @@ void setup() {
 
 
 void loop() {
-  if (canClickBtn) ButtonClick();
-  if (!canClickBtn && !configMode && (!connectFail || isSaved)) {
+  ButtonClick();
+  if (!configMode && (!connectFail || isSaved)) {
     if (status != WL_CONNECTED) WiFiConnect();
 
     if (millis() - epdEndTime >= 60000 * epdNextTime) {
@@ -77,6 +92,17 @@ void loop() {
 
 int EPD_5in79g_paint(void) {
   Serial.println("\r\nStarting process to draw EPD-picture\r\n");
+
+  // Fetch and parse before allocating the full-screen framebuffer. Keeping
+  // both the HTTP/JSON working memory and the 53 KB framebuffer alive at the
+  // same time can exhaust the ESP32-C5 heap.
+  Serial.println("Requesting drawing commands");
+  std::vector<PaperCommand> commands = Request::RequestConfig(jsonUrl);
+  if (commands.empty()) {
+    Serial.println("No drawing commands received; keeping current display");
+    return -1;
+  }
+
   if (DEV_Module_Init() != 0) {
     return -1;
   }
@@ -90,17 +116,27 @@ int EPD_5in79g_paint(void) {
   // Create a new image cache named IMAGE_BW and fill it with white
   UBYTE *BlackImage;
   UWORD Imagesize = ((EPD_5in79G_WIDTH % 4 == 0) ? (EPD_5in79G_WIDTH / 4) : (EPD_5in79G_WIDTH / 4 + 1)) * EPD_5in79G_HEIGHT;
-  if ((BlackImage = (UBYTE *)malloc(Imagesize / 4)) == NULL) {
+  if (psramFound()) {
+    BlackImage = static_cast<UBYTE *>(ps_malloc(Imagesize));
+  } else {
+    BlackImage = static_cast<UBYTE *>(malloc(Imagesize));
+  }
+  if (BlackImage == NULL) {
     Serial.println("Failed to apply for black memory...\r\n");
     return -1;
   }
+  Serial.println(
+    psramFound()
+      ? "Framebuffer allocated in PSRAM"
+      : "Framebuffer allocated in internal RAM"
+  );
 
   Serial.println("\r\nCreate image with properties:");
-  Paint_NewImage(BlackImage, EPD_5in79G_WIDTH / 2, EPD_5in79G_HEIGHT / 2, 0, WHITE);
+  Paint_NewImage(BlackImage, EPD_5in79G_WIDTH, EPD_5in79G_HEIGHT, 0, WHITE);
   Serial.print("   • ");
-  Serial.println("Width = " + String(EPD_5in79G_WIDTH / 2) + "px");
+  Serial.println("Width = " + String(EPD_5in79G_WIDTH) + "px");
   Serial.print("   • ");
-  Serial.println("Height = " + String(EPD_5in79G_HEIGHT / 2) + "px");
+  Serial.println("Height = " + String(EPD_5in79G_HEIGHT) + "px");
   Serial.print("   • ");
   Serial.println("Scale = 4");
   Paint_SetScale(4);
@@ -113,11 +149,13 @@ int EPD_5in79g_paint(void) {
   Serial.println("Clear image frame buffer");
   Paint_Clear(WHITE);
 
-  Serial.println("e-Paper draw from endpoint");
-  draw_epd_5in79g_remote(jsonUrl);
+  Serial.println("Drawing commands");
+  for (const auto& command : commands) {
+    execute_command(command);
+  }
 
   Serial.println("\r\nDisplay to EPD");
-  EPD_5in79g_Display_Partial(BlackImage);
+  EPD_5in79g_Display(BlackImage);
   DEV_Delay_ms(3000);
 
   Serial.println("Goto Sleep...");
@@ -145,31 +183,30 @@ void ButtonClick() {
   if (prevBtnState == LOW && newBtnState == HIGH) {
     Serial.println("The button is released");
     configMode = true;
+    connectFail = false;
   }
 
-  if (prevBtnState != newBtnState || prevBtnState == HIGH) {
-    canClickBtn = false;
-  }
+  prevBtnState = newBtnState;
 }
 
 
 void updateLED() {
   // Error → constantly on
   if (connectFail) {
-    digitalWrite(led, HIGH);
+    rgbLedWrite(RGB_LED_PIN, 255, 96, 0);
     return;
   }
 
   // Connected → off
   if (status == WL_CONNECTED) {
-    digitalWrite(led, LOW);
+    rgbLedWrite(RGB_LED_PIN, 0, 0, 0);
     return;
   }
 
   // Flash (AP + connecting)
-  digitalWrite(led, HIGH);
+  rgbLedWrite(RGB_LED_PIN, 255, 96, 0);
   delay(1000);
-  digitalWrite(led, LOW);
+  rgbLedWrite(RGB_LED_PIN, 0, 0, 0);
   delay(1000);
 }
 
@@ -194,43 +231,28 @@ void LogTitle(String title) {
 
 void APConnect() {
 
-  digitalWrite(led, LOW);
+  rgbLedWrite(RGB_LED_PIN, 0, 0, 0);
 
-  if (status != WL_AP_LISTENING) {
-    // Initialize serial and wait for port to open:
-    Serial.begin(9600);
-    while (!Serial) {
-      ;  // Wait for serial port to connect. Needed for native USB port only
-    }
-
+  if (!apStarted) {
     Serial.println("Start Access Point Web Server");
-
-    // Check for the WiFi module:
-    if (WiFi.status() == WL_NO_MODULE) {
-      Serial.println("Communication with WiFi module failed!");
-      // Don't continue
-      while (true);
-    }
-
-    String fv = WiFi.firmwareVersion();
-    if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-      Serial.println("Please upgrade the firmware");
-    }
-
-    // Override IP address
-    WiFi.config(IPAddress(192, 48, 56, 2));
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_AP);
 
     // Print the SSID (SSID);
     Serial.println("Creating access point...");
 
-    // Create open network. Change this line if you want to create an WEP network:
-    status = WiFi.beginAP(ssid, pass);
-    if (status != WL_AP_LISTENING) {
+    IPAddress apAddress(192, 48, 56, 2);
+    IPAddress subnet(255, 255, 255, 0);
+    if (!WiFi.softAPConfig(apAddress, apAddress, subnet) ||
+        !WiFi.softAP(ssid, pass)) {
       Serial.println("Creating access point failed");
-      // Don't continue
-      while (true);
+      connectFail = true;
+      updateLED();
+      return;
     }
 
+    apStarted = true;
+    status = WL_IDLE_STATUS;
     delay(1000);
 
     // Start the web server on port 80
@@ -282,24 +304,23 @@ void APConnect() {
               int pos1 = body.indexOf(ssidName + "=");
               int pos2 = body.indexOf("&" + passName + "=");
 
-              if (pos1 != -1 && pos2 != -1 && pos2 > pos1 + ssidName.length() + 1) {
-                Serial.print("BODY: ");
-                Serial.println(urlDecode(body));
+              if (body.length() < EEPROM_SIZE &&
+                  pos1 != -1 && pos2 != -1 && pos2 > pos1 + ssidName.length() + 1) {
+                String candidateSsid = urlDecode(
+                  body.substring(pos1 + ssidName.length() + 1, pos2)
+                );
+                String candidatePass = urlDecode(
+                  body.substring(pos2 + passName.length() + 2)
+                );
 
+                Serial.println("Saving submitted WiFi credentials");
+                ssidAP = candidateSsid;
+                passAP = candidatePass;
                 clearEEPROM();
                 saveEEPROM(body);
-
                 isSaved = true;
+                connectFail = false;
               }
-            }
-            getEerom = readEEPROM();
-
-            int pos1 = getEerom.indexOf(ssidName + "=");
-            int pos2 = getEerom.indexOf("&" + passName + "=");
-
-            if (pos1 != -1 && pos2 != -1 && pos2 > pos1 + ssidName.length() + 1) {
-              ssidAP = urlDecode(getEerom.substring(pos1 + ssidName.length() + 1, pos2));
-              passAP = urlDecode(getEerom.substring(pos2 + passName.length() + 2));
             }
 
             client.println("HTTP/1.1 200 OK");
@@ -326,6 +347,9 @@ void APConnect() {
               client.println("<form id='wifiForm' method='POST' action='/'>");
               client.println(logoSvg);
               client.println("<p>Wifi configuration</p>");
+              if (connectFail) {
+                client.println("<p class='error'>Could not connect. Check the network name and password, then try again.</p>");
+              }
               client.println("<input id='ssid' type='text' name='" + ssidName + "' placeholder='SSID' required>");
               client.println("<input id='password' type='password' name='" + passName + "' placeholder='Password' required>");
               client.println("<input id='connectBtn' type='submit' value='Connect' />");
@@ -365,18 +389,35 @@ void APConnect() {
 
     client.stop();
     Serial.println("client disconnected");
+
+    if (isSaved) {
+      server.end();
+      WiFi.softAPdisconnect(true);
+      WiFi.mode(WIFI_STA);
+      apStarted = false;
+      status = WL_IDLE_STATUS;
+    }
   }
 }
 
 
 void WiFiConnect() {
 
-  digitalWrite(led, LOW);
+  rgbLedWrite(RGB_LED_PIN, 0, 0, 0);
   if (status != WL_CONNECTED) {
-    WiFi.disconnect();
-    delay(1000);
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect(false, true);
+    delay(500);
   }
 
+  // Credentials saved through the configuration page take precedence over
+  // the optional hardcoded fallback.
+  ssidAP = "";
+  passAP = "";
+#if USE_HARDCODED_WIFI
+  ssidAP = WIFI_SSID;
+  passAP = WIFI_PASSWORD;
+#endif
   getEerom = readEEPROM();
   int pos1 = getEerom.indexOf(ssidName + "=");
   int pos2 = getEerom.indexOf("&" + passName + "=");
@@ -384,6 +425,13 @@ void WiFiConnect() {
   if (pos1 != -1 && pos2 != -1 && pos2 > pos1 + ssidName.length() + 1) {
     ssidAP = urlDecode(getEerom.substring(pos1 + ssidName.length() + 1, pos2));
     passAP = urlDecode(getEerom.substring(pos2 + passName.length() + 2));
+  }
+
+  if (ssidAP.length() == 0) {
+    Serial.println("No saved WiFi credentials; starting configuration mode");
+    configMode = true;
+    connectFail = false;
+    return;
   }
 
   if (!isSaved) Serial.print("\n");
@@ -400,18 +448,28 @@ void WiFiConnect() {
   // Connect to WPA/WPA2 network:
   status = WiFi.begin(ssidAP.c_str(), passAP.c_str());
 
-  delay(1000);
+  const unsigned long wifiTimeoutMs = 20000;
+  const unsigned long wifiStartTime = millis();
+  while (WiFi.status() != WL_CONNECTED &&
+         millis() - wifiStartTime < wifiTimeoutMs) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println();
+  status = WiFi.status();
 
-  if (WiFi.status() == WL_CONNECTED) {
+  if (status == WL_CONNECTED) {
     Serial.println("✓ Connected");
-    while (WiFi.localIP() == "0.0.0.0");
     Serial.print("   • IP: ");
     Serial.println(WiFi.localIP());
     connectFail = false;
     EPD_5in79g_paint();
   } else {
     Serial.println("✗ Error no connection");
+    Serial.print("   • WiFi status: ");
+    Serial.println(static_cast<int>(status));
     connectFail = true;
+    configMode = true;
   }
 
   isSaved = false;
@@ -422,11 +480,11 @@ void WiFiConnect() {
 void printWiFiStatus() {
   // Print the SSID of the network you're attached to:
   Serial.print("   • SSID: ");
-  Serial.println(WiFi.SSID());
+  Serial.println(ssid);
 
   // Print your WiFi shield's IP address:
   Serial.print("   • IP: ");
-  IPAddress ip = WiFi.localIP();
+  IPAddress ip = WiFi.softAPIP();
   Serial.println(ip);
 
   // Print where to go in a browser:
@@ -436,27 +494,34 @@ void printWiFiStatus() {
 
 
 void clearEEPROM() {
-  for (int i = 0; i < EEPROM.length(); i++) {
+  for (int i = 0; i < EEPROM_SIZE; i++) {
     EEPROM.write(i, '\0');
   }
+  EEPROM.commit();
 }
 
 
 void saveEEPROM(String value) {
-  for (int i = 0; i < value.length(); i++) {
+  size_t length = min(static_cast<size_t>(value.length()),
+                      static_cast<size_t>(EEPROM_SIZE - 1));
+  for (size_t i = 0; i < length; i++) {
     EEPROM.write(i, value[i]);
   }
-  EEPROM.write(value.length(), '\0');  // afslut string
+  EEPROM.write(length, '\0');
+  EEPROM.commit();
 }
 
 
 String readEEPROM() {
-  char data[100];
+  char data[EEPROM_SIZE];
+  size_t length = 0;
 
-  for (int i = 0; i < 100; i++) {
-    data[i] = EEPROM.read(i);
-    if (data[i] == '\0') break;
+  while (length < EEPROM_SIZE - 1) {
+    char value = static_cast<char>(EEPROM.read(length));
+    if (value == '\0' || value == static_cast<char>(0xff)) break;
+    data[length++] = value;
   }
+  data[length] = '\0';
 
   return String(data);
 }

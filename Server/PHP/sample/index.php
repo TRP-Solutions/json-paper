@@ -76,6 +76,20 @@ $display
 		y: 150,
 		img: $img,
 		transparent: Color::TRANSPARENT
+	)
+
+	->image(
+		x: 450,
+		y: 150,
+		img: $img,
+		transparent: Color::TRANSPARENT
+	)
+
+	->image(
+		x: 450,
+		y: 10,
+		img: $img,
+		transparent: Color::TRANSPARENT
 	);
 
 $display->output();
