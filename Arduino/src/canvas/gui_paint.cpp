@@ -524,6 +524,12 @@ void Paint_DrawChar(UWORD Xpoint, UWORD Ypoint, const char Acsii_Char,
 {
     UWORD Page, Column;
 
+    const unsigned char character = static_cast<unsigned char>(Acsii_Char);
+    if (character < ' ' || character > '~') {
+        log(WARNING, "Paint_DrawChar unsupported character\r\n");
+        return;
+    }
+
     if (Xpoint > Paint.Width || Ypoint > Paint.Height) {
         log(INFO, "Paint_DrawChar Input exceeds the normal display range\r\n");
         return;
@@ -580,6 +586,29 @@ void Paint_DrawString_EN(UWORD Xstart, UWORD Ystart, const char * pString,
     }
 
     while (* pString != '\0') {
+        if (*pString == '\r') {
+            pString++;
+            continue;
+        }
+
+        if (*pString == '\n') {
+            Xpoint = Xstart;
+            Ypoint += Font->Height;
+            pString++;
+
+            if ((Ypoint + Font->Height) > Paint.Height) {
+                return;
+            }
+            continue;
+        }
+
+        const unsigned char character =
+            static_cast<unsigned char>(*pString);
+        if (character < ' ' || character > '~') {
+            pString++;
+            continue;
+        }
+
         //if X direction filled , reposition to(Xstart,Ypoint),Ypoint is Y direction plus the Height of the character
         if ((Xpoint + Font->Width ) > Paint.Width ) {
             Xpoint = Xstart;

@@ -10,6 +10,12 @@ void DrawChar_Transparent(UWORD Xstart, UWORD Ystart, const char Acsii_Char,
 {
     UWORD Page, Column;
 
+    const unsigned char character = static_cast<unsigned char>(Acsii_Char);
+    if (character < ' ' || character > '~') {
+        log(WARNING, "DrawChar_Transparent unsupported character\r\n");
+        return;
+    }
+
     const uint8_t *ptr = &Font->table[(Acsii_Char - ' ') * Font->Height * ((Font->Width + 7) / 8)];
 
     for (Page = 0; Page < Font->Height; Page++) {
@@ -36,6 +42,28 @@ void DrawString_EN_Transparent(UWORD Xstart, UWORD Ystart, const char *pString,
     }
 
     while (*pString != '\0') {
+        if (*pString == '\r') {
+            pString++;
+            continue;
+        }
+
+        if (*pString == '\n') {
+            Xpoint = Xstart;
+            Ypoint += Font->Height;
+            pString++;
+
+            if ((Ypoint + Font->Height) > Paint.Height) {
+                return;
+            }
+            continue;
+        }
+
+        const unsigned char character =
+            static_cast<unsigned char>(*pString);
+        if (character < ' ' || character > '~') {
+            pString++;
+            continue;
+        }
 
         if ((Xpoint + Font->Width) > Paint.Width) {
             Xpoint = Xstart;
