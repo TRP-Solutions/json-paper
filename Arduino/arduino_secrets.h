@@ -1,7 +1,7 @@
 // wifi used for fetching the json drawing commands
 #define USE_HARDCODED_WIFI 0
-#define WIFI_SSID     "trp-office"
-#define WIFI_PASSWORD "#TRPnimda_1575#"
+#define WIFI_SSID     "chang-me"
+#define WIFI_PASSWORD "chang-me"
 
 // configuration access point
 #define CONFIG_AP_SSID     "arduinoAP"
