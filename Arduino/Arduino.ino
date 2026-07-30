@@ -1,6 +1,10 @@
 #include <WiFi.h>
 #include <EEPROM.h>
+#include <Preferences.h>
+#include <esp_sleep.h>
+#include <esp_wifi.h>
 #include <esp32-hal-psram.h>
+#include <time.h>
 #include "arduino_secrets.h"
 #include <ArduinoJson.h>
 #include "src/core/core.h"
@@ -15,40 +19,82 @@ char pass[] = CONFIG_AP_PASSWORD;
 #define RGB_LED_PIN 27
 #define BUTTON_PIN 5
 #define EEPROM_SIZE 512
+#define SETTINGS_NAMESPACE "json-paper"
+#define SETTINGS_VERSION 1
+#define CLOCK_RETRY_SECONDS (15ULL * 60ULL)
+#define VALID_CLOCK_EPOCH 1704067200LL
+// Temporary diagnostic setting. Change to 0 to restore dual-band selection.
+#define FORCE_WIFI_2_4_GHZ 0
+
+const char *DEFAULT_JSON_URL = "http://192.168.11.60:8080/";
+const char *DEFAULT_CRON = "0 * * * *";
+const char *COPENHAGEN_TZ = "CET-1CEST,M3.5.0,M10.5.0/3";
 
 int status = WL_IDLE_STATUS;
 WiFiServer server(80);
+Preferences preferences;
 
 String getEerom = "";
 
 String ssidAP = "";
 String passAP = "";
+String endpoint = DEFAULT_JSON_URL;
+String cronExpression = DEFAULT_CRON;
 
 String ssidName = "ssidInput";
 String passName = "passInput";
+String endpointName = "endpointInput";
+String cronName = "cronInput";
 
 bool isSaved = false;
 bool connectFail = false;
 
 bool configMode = false;
 bool apStarted = false;
+bool settingsLoaded = false;
 
 // Button
 int newBtnState;  // the current state of button
 int prevBtnState;
 
-unsigned long epdEndTime;
+struct CronSchedule {
+  int minute;
+  int hour;
+  int dayOfMonth;
+  int month;
+  int dayOfWeek;
+  bool anyMinute;
+  bool anyHour;
+  bool anyDayOfMonth;
+  bool anyMonth;
+  bool anyDayOfWeek;
+};
 
-// Setup time in minutes to pass before drawing EPD-picture again
-unsigned long epdNextTime = 10;
-
-// Setup url with json commands to draw EPD-picture
-std::string jsonUrl = "http://192.168.11.60:8080/";
+void LogTitle(String title);
+void loadSettings();
+void ButtonClick();
+void APConnect();
+void updateLED();
+void runRefreshCycle();
+String formValue(const String& body, const String& name);
+bool isValidEndpoint(const String& value);
+bool parseCron(String expression, CronSchedule& schedule, String& error);
+time_t nextCronTime(const CronSchedule& schedule, time_t after);
+bool saveSettings();
+String htmlEscape(String value);
+void printWiFiStatus();
+void cssPrint(WiFiClient& client);
+bool WiFiConnect();
+String readEEPROM();
+String urlDecode(String input);
+void enterDeepSleep(uint64_t sleepSeconds);
+void sleepUntilNextCron(time_t now);
 
 
 void setup() {
   // Initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
+
   delay(1000);
 
   Serial.print("PSRAM detected: ");
@@ -62,31 +108,38 @@ void setup() {
 
   LogTitle("Start JSON-Paper");
 
+  setenv("TZ", COPENHAGEN_TZ, 1);
+  tzset();
+
   if (!EEPROM.begin(EEPROM_SIZE)) {
     Serial.println("Failed to initialize EEPROM");
-    connectFail = true;
   }
 
   // Initialize the pushbutton pin as a pull-up input
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   prevBtnState = digitalRead(BUTTON_PIN);
+
+  loadSettings();
+
+  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO) {
+    Serial.println("Configuration button woke the device");
+    configMode = true;
+  } else if (ssidAP.length() == 0) {
+    Serial.println("No saved WiFi credentials; starting configuration mode");
+    configMode = true;
+  }
 }
 
 
 void loop() {
-  ButtonClick();
-  if (!configMode && (!connectFail || isSaved)) {
-    if (status != WL_CONNECTED) WiFiConnect();
-
-    if (millis() - epdEndTime >= 60000 * epdNextTime) {
-      Serial.println(String(epdNextTime) + " minutes have passed");
-      EPD_5in79g_paint();
-    }
-  }
   if (configMode) {
+    ButtonClick();
     APConnect();
     updateLED();
+    return;
   }
+
+  runRefreshCycle();
 }
 
 
@@ -97,7 +150,7 @@ int EPD_5in79g_paint(void) {
   // both the HTTP/JSON working memory and the 53 KB framebuffer alive at the
   // same time can exhaust the ESP32-C5 heap.
   Serial.println("Requesting drawing commands");
-  std::vector<PaperCommand> commands = Request::RequestConfig(jsonUrl);
+  std::vector<PaperCommand> commands = Request::RequestConfig(endpoint.c_str());
   if (commands.empty()) {
     Serial.println("No drawing commands received; keeping current display");
     return -1;
@@ -171,7 +224,6 @@ int EPD_5in79g_paint(void) {
   DEV_Module_Exit();
 
   Serial.println("Finished process to draw EPD-picture\r\n");
-  epdEndTime = millis();
   return 0;
 }
 
@@ -291,36 +343,65 @@ void APConnect() {
           if (currentLine == "\r\n") {
 
 
-            if (isPost && contentLength > 0) {
+            String formError = "";
+            if (isPost && contentLength > 0 && contentLength <= 2048) {
               String body = "";
+              unsigned long bodyStartTime = millis();
 
-              while (body.length() < contentLength) {
+              while (body.length() < contentLength &&
+                     millis() - bodyStartTime < 5000) {
                 if (client.available()) {
                   char c = client.read();
                   body += c;
                 }
               }
 
-              int pos1 = body.indexOf(ssidName + "=");
-              int pos2 = body.indexOf("&" + passName + "=");
+              String candidateSsid = formValue(body, ssidName);
+              String submittedPass = formValue(body, passName);
+              String candidateEndpoint = formValue(body, endpointName);
+              String candidateCron = formValue(body, cronName);
+              candidateEndpoint.trim();
+              candidateCron.trim();
+              String candidatePass = submittedPass.length() == 0
+                ? passAP
+                : submittedPass;
 
-              if (body.length() < EEPROM_SIZE &&
-                  pos1 != -1 && pos2 != -1 && pos2 > pos1 + ssidName.length() + 1) {
-                String candidateSsid = urlDecode(
-                  body.substring(pos1 + ssidName.length() + 1, pos2)
-                );
-                String candidatePass = urlDecode(
-                  body.substring(pos2 + passName.length() + 2)
-                );
+              if (body.length() != contentLength) {
+                formError = "The request body was incomplete.";
+              } else if (candidateSsid.length() == 0 ||
+                         candidateSsid.length() > 32) {
+                formError = "SSID must contain between 1 and 32 characters.";
+              } else if (candidatePass.length() < 8 ||
+                         candidatePass.length() > 63) {
+                formError = "Password must contain between 8 and 63 characters.";
+              } else if (!isValidEndpoint(candidateEndpoint)) {
+                formError = "Endpoint must be a valid HTTP or HTTPS URL.";
+              } else {
+                CronSchedule candidateSchedule;
+                String cronError;
+                if (!parseCron(candidateCron, candidateSchedule, cronError) ||
+                    nextCronTime(candidateSchedule, 1704067200LL) == 0) {
+                  formError = cronError.length() > 0
+                    ? cronError
+                    : "Cron schedule has no possible occurrence.";
+                }
+              }
 
-                Serial.println("Saving submitted WiFi credentials");
+              if (formError.length() == 0) {
+                Serial.println("Saving submitted device configuration");
                 ssidAP = candidateSsid;
                 passAP = candidatePass;
-                clearEEPROM();
-                saveEEPROM(body);
-                isSaved = true;
-                connectFail = false;
+                endpoint = candidateEndpoint;
+                cronExpression = candidateCron;
+                if (saveSettings()) {
+                  isSaved = true;
+                  connectFail = false;
+                } else {
+                  formError = "Could not save configuration.";
+                }
               }
+            } else if (isPost) {
+              formError = "Configuration request is empty or too large.";
             }
 
             client.println("HTTP/1.1 200 OK");
@@ -346,25 +427,33 @@ void APConnect() {
             if (!isSaved) {
               client.println("<form id='wifiForm' method='POST' action='/'>");
               client.println(logoSvg);
-              client.println("<p>Wifi configuration</p>");
+              client.println("<p>Device configuration</p>");
               if (connectFail) {
                 client.println("<p class='error'>Could not connect. Check the network name and password, then try again.</p>");
               }
-              client.println("<input id='ssid' type='text' name='" + ssidName + "' placeholder='SSID' required>");
-              client.println("<input id='password' type='password' name='" + passName + "' placeholder='Password' required>");
-              client.println("<input id='connectBtn' type='submit' value='Connect' />");
+              if (formError.length() > 0) {
+                client.println("<p class='error'>" + htmlEscape(formError) + "</p>");
+              }
+              client.println("<input id='ssid' type='text' maxlength='32' name='" + ssidName + "' placeholder='SSID' value='" + htmlEscape(ssidAP) + "' required>");
+              client.println("<input id='password' type='password' maxlength='63' name='" + passName + "' placeholder='" + String(passAP.length() > 0 ? "Password (blank keeps saved)" : "Password") + "'>");
+              client.println("<input id='endpoint' type='url' maxlength='512' name='" + endpointName + "' placeholder='https://example.com/display.json' value='" + htmlEscape(endpoint) + "' required>");
+              client.println("<input id='cron' type='text' name='" + cronName + "' placeholder='0 * * * *' value='" + htmlEscape(cronExpression) + "' required>");
+              client.println("<small>Cron: minute hour day month weekday. Use a number or * in each field. Sunday is 0.</small>");
+              client.println("<input id='connectBtn' type='submit' value='Save' />");
               client.println("</form>");
             } else {
                 client.println("<div class='wifi-status'>");
                 client.println(logoSvg);
-                client.println("<p>Wifi configuration</p>");
+                client.println("<p>Device configuration</p>");
                 client.println("<ul>");
-                client.println("<li>SSID: " + ssidAP + "</li>");
+                client.println("<li>SSID: " + htmlEscape(ssidAP) + "</li>");
                 String hidePassAP = "";
                 for (int i = 0; i < passAP.length(); i++) {
                   hidePassAP += "*";
                 }
                 client.println("<li>Password: " + hidePassAP + "</li>");
+                client.println("<li>Endpoint: " + htmlEscape(endpoint) + "</li>");
+                client.println("<li>Cron: " + htmlEscape(cronExpression) + "</li>");
                 client.println("</ul>");
                 client.println("<div class='loading-row' aria-label='Loading'>");
                 client.println("<div class='spinner'></div>");
@@ -401,37 +490,29 @@ void APConnect() {
 }
 
 
-void WiFiConnect() {
+bool WiFiConnect() {
 
   rgbLedWrite(RGB_LED_PIN, 0, 0, 0);
   if (status != WL_CONNECTED) {
     WiFi.mode(WIFI_STA);
+#if FORCE_WIFI_2_4_GHZ
+    esp_err_t bandResult = esp_wifi_set_band_mode(WIFI_BAND_MODE_2G_ONLY);
+    if (bandResult == ESP_OK) {
+      Serial.println("WiFi restricted to 2.4 GHz");
+    } else {
+      Serial.print("Could not restrict WiFi band; error: ");
+      Serial.println(static_cast<int>(bandResult));
+    }
+#endif
     WiFi.disconnect(false, true);
     delay(500);
-  }
-
-  // Credentials saved through the configuration page take precedence over
-  // the optional hardcoded fallback.
-  ssidAP = "";
-  passAP = "";
-#if USE_HARDCODED_WIFI
-  ssidAP = WIFI_SSID;
-  passAP = WIFI_PASSWORD;
-#endif
-  getEerom = readEEPROM();
-  int pos1 = getEerom.indexOf(ssidName + "=");
-  int pos2 = getEerom.indexOf("&" + passName + "=");
-
-  if (pos1 != -1 && pos2 != -1 && pos2 > pos1 + ssidName.length() + 1) {
-    ssidAP = urlDecode(getEerom.substring(pos1 + ssidName.length() + 1, pos2));
-    passAP = urlDecode(getEerom.substring(pos2 + passName.length() + 2));
   }
 
   if (ssidAP.length() == 0) {
     Serial.println("No saved WiFi credentials; starting configuration mode");
     configMode = true;
     connectFail = false;
-    return;
+    return false;
   }
 
   if (!isSaved) Serial.print("\n");
@@ -463,17 +544,356 @@ void WiFiConnect() {
     Serial.print("   • IP: ");
     Serial.println(WiFi.localIP());
     connectFail = false;
-    EPD_5in79g_paint();
   } else {
     Serial.println("✗ Error no connection");
     Serial.print("   • WiFi status: ");
     Serial.println(static_cast<int>(status));
     connectFail = true;
-    configMode = true;
   }
 
   isSaved = false;
   updateLED();
+  return status == WL_CONNECTED;
+}
+
+
+void loadSettings() {
+  ssidAP = "";
+  passAP = "";
+  endpoint = DEFAULT_JSON_URL;
+  cronExpression = DEFAULT_CRON;
+
+  if (preferences.begin(SETTINGS_NAMESPACE, false)) {
+    int version = preferences.getInt("version", 0);
+    if (version == SETTINGS_VERSION) {
+      ssidAP = preferences.getString("ssid", "");
+      passAP = preferences.getString("password", "");
+      endpoint = preferences.getString("endpoint", DEFAULT_JSON_URL);
+      cronExpression = preferences.getString("cron", DEFAULT_CRON);
+      settingsLoaded = true;
+    }
+    preferences.end();
+  }
+
+  if (!settingsLoaded) {
+    // Migrate credentials saved by the previous raw-form EEPROM format.
+    getEerom = readEEPROM();
+    String legacySsid = formValue(getEerom, ssidName);
+    String legacyPass = formValue(getEerom, passName);
+    if (legacySsid.length() > 0) {
+      Serial.println("Migrating legacy EEPROM configuration");
+      ssidAP = legacySsid;
+      passAP = legacyPass;
+      settingsLoaded = saveSettings();
+    }
+  }
+
+#if USE_HARDCODED_WIFI
+  if (ssidAP.length() == 0) {
+    ssidAP = WIFI_SSID;
+    passAP = WIFI_PASSWORD;
+  }
+#endif
+}
+
+
+bool saveSettings() {
+  if (!preferences.begin(SETTINGS_NAMESPACE, false)) {
+    Serial.println("Failed to open settings storage");
+    return false;
+  }
+
+  // Mark the record invalid until every value has been written.
+  preferences.putInt("version", 0);
+  bool saved =
+    preferences.putString("ssid", ssidAP) > 0 &&
+    preferences.putString("password", passAP) > 0 &&
+    preferences.putString("endpoint", endpoint) > 0 &&
+    preferences.putString("cron", cronExpression) > 0;
+  if (saved) {
+    preferences.putInt("version", SETTINGS_VERSION);
+  }
+  preferences.end();
+
+  if (!saved) {
+    Serial.println("Failed to save device configuration");
+  }
+  return saved;
+}
+
+
+String formValue(const String& body, const String& name) {
+  String marker = name + "=";
+  int start = 0;
+
+  while (start <= body.length()) {
+    int end = body.indexOf('&', start);
+    if (end == -1) end = body.length();
+    String field = body.substring(start, end);
+    if (field.startsWith(marker)) {
+      return urlDecode(field.substring(marker.length()));
+    }
+    start = end + 1;
+  }
+
+  return "";
+}
+
+
+String htmlEscape(String value) {
+  value.replace("&", "&amp;");
+  value.replace("\"", "&quot;");
+  value.replace("'", "&#39;");
+  value.replace("<", "&lt;");
+  value.replace(">", "&gt;");
+  return value;
+}
+
+
+bool isValidEndpoint(const String& value) {
+  if (value.length() == 0 || value.length() > 512) return false;
+
+  int schemeLength = 0;
+  if (value.startsWith("http://")) {
+    schemeLength = 7;
+  } else if (value.startsWith("https://")) {
+    schemeLength = 8;
+  } else {
+    return false;
+  }
+
+  int hostEnd = value.indexOf('/', schemeLength);
+  if (hostEnd == -1) hostEnd = value.length();
+  if (hostEnd == schemeLength) return false;
+
+  for (int i = schemeLength; i < value.length(); i++) {
+    if (isWhitespace(value[i])) return false;
+  }
+  return true;
+}
+
+
+bool parseCronField(
+  const String& field,
+  int minimum,
+  int maximum,
+  int& value,
+  bool& wildcard
+) {
+  if (field == "*") {
+    wildcard = true;
+    value = minimum;
+    return true;
+  }
+
+  wildcard = false;
+  if (field.length() == 0) return false;
+  for (int i = 0; i < field.length(); i++) {
+    if (!isDigit(field[i])) return false;
+  }
+
+  long parsed = field.toInt();
+  if (parsed < minimum || parsed > maximum) return false;
+  value = static_cast<int>(parsed);
+  return true;
+}
+
+
+bool parseCron(
+  String expression,
+  CronSchedule& schedule,
+  String& error
+) {
+  expression.trim();
+  String fields[5];
+  int fieldCount = 0;
+  int position = 0;
+
+  while (position < expression.length()) {
+    while (position < expression.length() &&
+           isWhitespace(expression[position])) {
+      position++;
+    }
+    if (position >= expression.length()) break;
+    if (fieldCount >= 5) {
+      error = "Cron must contain exactly five fields.";
+      return false;
+    }
+
+    int end = position;
+    while (end < expression.length() &&
+           !isWhitespace(expression[end])) {
+      end++;
+    }
+    fields[fieldCount++] = expression.substring(position, end);
+    position = end;
+  }
+
+  if (fieldCount != 5) {
+    error = "Cron must contain exactly five fields.";
+    return false;
+  }
+
+  if (!parseCronField(fields[0], 0, 59, schedule.minute,
+                      schedule.anyMinute) ||
+      !parseCronField(fields[1], 0, 23, schedule.hour,
+                      schedule.anyHour) ||
+      !parseCronField(fields[2], 1, 31, schedule.dayOfMonth,
+                      schedule.anyDayOfMonth) ||
+      !parseCronField(fields[3], 1, 12, schedule.month,
+                      schedule.anyMonth) ||
+      !parseCronField(fields[4], 0, 6, schedule.dayOfWeek,
+                      schedule.anyDayOfWeek)) {
+    error = "Cron fields must be * or a number within the documented range.";
+    return false;
+  }
+
+  error = "";
+  return true;
+}
+
+
+bool cronMatches(const CronSchedule& schedule, const struct tm& localTime) {
+  bool minuteMatches =
+    schedule.anyMinute || schedule.minute == localTime.tm_min;
+  bool hourMatches =
+    schedule.anyHour || schedule.hour == localTime.tm_hour;
+  bool monthMatches =
+    schedule.anyMonth || schedule.month == localTime.tm_mon + 1;
+  bool dayOfMonthMatches =
+    schedule.anyDayOfMonth || schedule.dayOfMonth == localTime.tm_mday;
+  bool dayOfWeekMatches =
+    schedule.anyDayOfWeek || schedule.dayOfWeek == localTime.tm_wday;
+
+  bool dayMatches;
+  if (schedule.anyDayOfMonth && schedule.anyDayOfWeek) {
+    dayMatches = true;
+  } else if (schedule.anyDayOfMonth) {
+    dayMatches = dayOfWeekMatches;
+  } else if (schedule.anyDayOfWeek) {
+    dayMatches = dayOfMonthMatches;
+  } else {
+    dayMatches = dayOfMonthMatches || dayOfWeekMatches;
+  }
+
+  return minuteMatches && hourMatches && monthMatches && dayMatches;
+}
+
+
+time_t nextCronTime(const CronSchedule& schedule, time_t after) {
+  time_t candidate = after - (after % 60) + 60;
+  const int maxMinutes = 8 * 366 * 24 * 60;
+
+  for (int checked = 0; checked < maxMinutes; checked++, candidate += 60) {
+    struct tm localTime;
+    localtime_r(&candidate, &localTime);
+    if (cronMatches(schedule, localTime)) {
+      return candidate;
+    }
+  }
+
+  return 0;
+}
+
+
+bool ensureClockIsValid() {
+  configTzTime(
+    COPENHAGEN_TZ,
+    "pool.ntp.org",
+    "time.nist.gov",
+    "time.cloudflare.com"
+  );
+
+  if (time(nullptr) >= VALID_CLOCK_EPOCH) {
+    Serial.println("Using retained clock while NTP synchronizes");
+    return true;
+  }
+
+  Serial.print("Synchronizing clock");
+  unsigned long started = millis();
+  while (millis() - started < 10000) {
+    if (time(nullptr) >= VALID_CLOCK_EPOCH) {
+      Serial.println("\nClock synchronized");
+      return true;
+    }
+    Serial.print(".");
+    delay(250);
+  }
+
+  Serial.println("\nNo trustworthy clock available");
+  return false;
+}
+
+
+void enterDeepSleep(uint64_t sleepSeconds) {
+  if (sleepSeconds == 0) sleepSeconds = CLOCK_RETRY_SECONDS;
+
+  Serial.print("Deep sleeping for ");
+  Serial.print(static_cast<unsigned long long>(sleepSeconds));
+  Serial.println(" seconds");
+  Serial.flush();
+
+  server.end();
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  rgbLedWrite(RGB_LED_PIN, 0, 0, 0);
+  pinMode(EPD_PWR_PIN, OUTPUT);
+  digitalWrite(EPD_PWR_PIN, LOW);
+
+  esp_sleep_enable_timer_wakeup(sleepSeconds * 1000000ULL);
+  esp_deep_sleep_enable_gpio_wakeup(
+    1ULL << BUTTON_PIN,
+    ESP_GPIO_WAKEUP_GPIO_LOW
+  );
+  esp_deep_sleep_start();
+}
+
+
+void sleepUntilNextCron(time_t now) {
+  CronSchedule schedule;
+  String error;
+  if (!parseCron(cronExpression, schedule, error)) {
+    Serial.println(("Stored cron is invalid: " + error).c_str());
+    enterDeepSleep(CLOCK_RETRY_SECONDS);
+    return;
+  }
+
+  time_t next = nextCronTime(schedule, now);
+  if (next == 0 || next <= now) {
+    Serial.println("Could not calculate the next cron occurrence");
+    enterDeepSleep(CLOCK_RETRY_SECONDS);
+    return;
+  }
+
+  struct tm nextLocal;
+  localtime_r(&next, &nextLocal);
+  char nextText[40];
+  strftime(nextText, sizeof(nextText), "%Y-%m-%d %H:%M %Z", &nextLocal);
+  Serial.print("Next scheduled refresh: ");
+  Serial.println(nextText);
+
+  enterDeepSleep(static_cast<uint64_t>(next - now));
+}
+
+
+void runRefreshCycle() {
+  if (!WiFiConnect()) {
+    time_t now = time(nullptr);
+    if (now >= VALID_CLOCK_EPOCH) {
+      sleepUntilNextCron(now);
+    } else {
+      enterDeepSleep(CLOCK_RETRY_SECONDS);
+    }
+    return;
+  }
+
+  if (!ensureClockIsValid()) {
+    enterDeepSleep(CLOCK_RETRY_SECONDS);
+    return;
+  }
+
+  EPD_5in79g_paint();
+  sleepUntilNextCron(time(nullptr));
 }
 
 
@@ -602,6 +1022,21 @@ void cssPrint(WiFiClient& client) {
       text-align: left;
       margin: 0 auto 20px auto;
       width: 215px;
+    }
+
+    form .error {
+      color: #b42318;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    form small {
+      display: block;
+      width: 215px;
+      margin: -1em auto 2em auto;
+      color: hsl(227 6% 41% / 1);
+      line-height: 1.35;
+      text-align: left;
     }
 
     form input {

@@ -14,6 +14,7 @@ std::unordered_map<std::string, CmdHandler> cmdMap = {
     {"draw_line", DrawLine},
     {"draw_rectangle", DrawRectangle},
     {"draw_circle", DrawCircle},
+    {"draw_pie_slice", DrawPieSlice},
     {"draw_image", DrawImage},
 
     {"draw_string", DrawString},

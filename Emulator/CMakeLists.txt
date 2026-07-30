@@ -31,6 +31,7 @@ FetchContent_Declare(
 set(raylib_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 set(json_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
 set(httplib_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
+set(HTTPLIB_REQUIRE_OPENSSL ON CACHE BOOL "Require TLS support for emulator requests" FORCE)
 
 FetchContent_MakeAvailable(raylib json httplib)
 
@@ -68,6 +69,7 @@ set(SOURCES
         ${ARDUINO_DIR}/src/core/command/draw_line.cpp
         ${ARDUINO_DIR}/src/core/command/draw_rectangle.cpp
         ${ARDUINO_DIR}/src/core/command/draw_circle.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_pie_slice.cpp
         ${ARDUINO_DIR}/src/core/command/draw_image.cpp
         ${ARDUINO_DIR}/src/core/command/draw_char.cpp
         ${ARDUINO_DIR}/src/core/command/draw_num.cpp

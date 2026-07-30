@@ -194,6 +194,30 @@ class Display
 		return $this;
 	}
 
+	public function pieSlice(
+		int   $x,
+		int   $y,
+		int   $radius,
+		int   $start_angle,
+		int   $sweep_angle,
+		Color $color
+	): self {
+
+		$this->commands[] = [
+			"cmd" => "draw_pie_slice",
+			"args" => [
+				"x" => $x,
+				"y" => $y,
+				"radius" => $radius,
+				"start_angle" => $start_angle,
+				"sweep_angle" => $sweep_angle,
+				"color" => $color
+			]
+		];
+
+		return $this;
+	}
+
 	public function text(
 		int    $x,
 		int    $y,

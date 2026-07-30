@@ -11,37 +11,72 @@
 
 using json = nlohmann::json;
 
-std::string NormalizeHost(std::string& addr, std::string& path) {
-    path = "/";
-
-    // Remove protocol
-    if (addr.find("http://") == 0)
-        addr = addr.substr(7);
-    else if (addr.find("https://") == 0)
-        addr = addr.substr(8);
-
-    // Split host + path
-    size_t slashPos = addr.find('/');
-    if (slashPos != std::string::npos) {
-        path = addr.substr(slashPos);
-        addr = addr.substr(0, slashPos);
+bool ParseEndpoint(
+    const std::string& address,
+    std::string& origin,
+    std::string& target
+) {
+    std::string url = address;
+    if (url.find("://") == std::string::npos) {
+        url = "http://" + url;
     }
 
-    return addr;
+    const size_t schemeEnd = url.find("://");
+    const std::string scheme = url.substr(0, schemeEnd);
+    if (scheme != "http" && scheme != "https") {
+        return false;
+    }
+
+    const size_t authorityStart = schemeEnd + 3;
+    const size_t targetStart = url.find_first_of("/?#", authorityStart);
+    const size_t authorityEnd =
+        targetStart == std::string::npos ? url.size() : targetStart;
+    if (authorityEnd == authorityStart) {
+        return false;
+    }
+
+    origin = url.substr(0, authorityEnd);
+    target = "/";
+
+    if (targetStart != std::string::npos && url[targetStart] != '#') {
+        const size_t fragmentStart = url.find('#', targetStart);
+        std::string requestTarget = url.substr(
+            targetStart,
+            fragmentStart == std::string::npos
+                ? std::string::npos
+                : fragmentStart - targetStart
+        );
+        target = requestTarget.front() == '?'
+            ? "/" + requestTarget
+            : requestTarget;
+    }
+
+    return true;
 }
 
 std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
-    std::string host = addr;
-    std::string path;
+    std::string origin;
+    std::string target;
+    if (!ParseEndpoint(addr, origin, target)) {
+        std::cerr << "Invalid endpoint URL: " << addr << "\n";
+        return {};
+    }
 
-    host = NormalizeHost(host, path);
+    httplib::Client cli(origin);
+    cli.set_connection_timeout(10);
+    cli.set_read_timeout(10);
+    cli.set_write_timeout(10);
 
-    httplib::Client cli(host.c_str());
+    auto res = cli.Get(target);
 
-    auto res = cli.Get(path.c_str());
-
-    if (!res || res->status != 200) {
-        std::cerr << "Request failed\n";
+    if (!res) {
+        std::cerr << "Request failed: "
+                  << httplib::to_string(res.error()) << "\n";
+        return {};
+    }
+    if (res->status != 200) {
+        std::cerr << "Request failed with HTTP status "
+                  << res->status << "\n";
         return {};
     }
 

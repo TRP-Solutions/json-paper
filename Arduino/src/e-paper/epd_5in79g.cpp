@@ -77,15 +77,23 @@ parameter:
 void EPD_5in79g_ReadBus(void)
 {
     log(INFO, "e-Paper busy");
-	UBYTE busy;
-	do
-	{
-		busy = DEV_Digital_Read(EPD_BUSY_PIN);
-        DEV_Delay_ms(10);   
-	}
-	while(!busy);   
-	DEV_Delay_ms(200);     
-    log(INFO, "e-Paper busy release");
+    const unsigned long waitStarted = millis();
+    const unsigned long busyTimeoutMs = 45000;
+
+    // Waveshare's module board exposes BUSY as active-low: LOW while the
+    // controller is processing and HIGH when it is ready for another command.
+    while (!DEV_Digital_Read(EPD_BUSY_PIN)) {
+        if (millis() - waitStarted >= busyTimeoutMs) {
+            log(WARNING, "e-Paper BUSY timeout");
+            return;
+        }
+        DEV_Delay_ms(10);
+    }
+
+    DEV_Delay_ms(200);
+    Serial.print("e-Paper busy release after ");
+    Serial.print(millis() - waitStarted);
+    Serial.println(" ms");
 }
 
 /******************************************************************************
@@ -94,12 +102,26 @@ parameter:
 ******************************************************************************/
 static void EPD_5in79g_TurnOnDisplay(void)
 {
+    const unsigned long refreshStarted = millis();
+    const unsigned long minimumRefreshMs = 25000;
+
     EPD_5in79g_SendCommand(0xA2);	//********************
     EPD_5in79g_SendData(0x00);	
     
     EPD_5in79g_SendCommand(0x12);
     EPD_5in79g_SendData(0x00);
     EPD_5in79g_ReadBus();
+
+    // A full four-color refresh is specified at roughly 21-24 seconds. Keep
+    // the panel powered for the whole waveform even if BUSY is already HIGH
+    // because of wiring noise or an adapter-board polarity mismatch.
+    const unsigned long elapsed = millis() - refreshStarted;
+    if (elapsed < minimumRefreshMs) {
+        Serial.print("Waiting for minimum full-refresh time: ");
+        Serial.print(minimumRefreshMs - elapsed);
+        Serial.println(" ms");
+        DEV_Delay_ms(minimumRefreshMs - elapsed);
+    }
 }
 
 /******************************************************************************
