@@ -35,7 +35,6 @@
 #include <string>
 #include "../debug_custom/debug.h"
 #include "../canvas/gui_paint.h"
-#include "../font/fonts.h"
 
 struct PaperCommand;
 
@@ -58,13 +57,7 @@ void DrawCircle(const PaperCommand& command);
 void DrawPieSlice(const PaperCommand& command);
 void DrawImage(const PaperCommand& command);
 
-// Text (high-level)
-void DrawString(const PaperCommand& command);
-
-// Text (low-level primitives)
-void DrawChar(const PaperCommand& command);
-void DrawNum(const PaperCommand& command);
-void DrawTime(const PaperCommand& command);
+void DrawText(const PaperCommand& command);
 
 bool ParseColor(const std::string& color, uint8_t& out);
 bool GetRequiredArg(const PaperCommand& cmd, const std::string& key, std::string& out);
@@ -74,5 +67,4 @@ bool ParseDotPixel(const std::string& s, DOT_PIXEL& out);
 bool ParseLineStyle(const std::string& s, LINE_STYLE& out);
 bool ParseDrawFill(const std::string& s, DRAW_FILL& out);
 bool ParseDotStyle(const std::string& s, DOT_STYLE& out);
-bool ParseFont(const std::string& s, sFONT*& out);
 #endif

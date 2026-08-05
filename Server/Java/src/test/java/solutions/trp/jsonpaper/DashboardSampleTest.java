@@ -15,7 +15,7 @@ class DashboardSampleTest {
         DisplayDocument dashboard = DashboardSample.create(logo);
         List<DisplayCommand> commands = dashboard.commands();
 
-        assertEquals("1.0", dashboard.version());
+        assertEquals("2.0", dashboard.version());
         assertEquals(45, commands.size());
         assertEquals("clear", commands.get(0).cmd());
         assertEquals("draw_image", commands.get(1).cmd());
@@ -27,11 +27,11 @@ class DashboardSampleTest {
         assertEquals("dotted", commands.get(13).args().get("style"));
         assertEquals(
             "Total hours spend: 48",
-            commands.get(43).args().get("text")
+            ((java.util.Map<?, ?>)((java.util.List<?>)commands.get(43).args().get("spans")).get(0)).get("text")
         );
         assertEquals(
             "Total Projects: 15",
-            commands.get(44).args().get("text")
+            ((java.util.Map<?, ?>)((java.util.List<?>)commands.get(44).args().get("spans")).get(0)).get("text")
         );
     }
 }

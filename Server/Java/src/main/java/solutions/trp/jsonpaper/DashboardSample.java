@@ -4,11 +4,13 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Java equivalent of {@code Server/PHP/sample/index.php}.
  */
 public final class DashboardSample {
+    private static final String DEVICE_FONT = "helvetica";
     private DashboardSample() {
     }
 
@@ -69,32 +71,11 @@ public final class DashboardSample {
                 Color.BLACK
             )
             .circle(175, 157, 7, Color.RED, Width.W1, FillMode.FULL)
-            .text(
-                195,
-                150,
-                "Todo",
-                Font.FONT_16,
-                Color.RED,
-                Color.TRANSPARENT
-            )
+            .text(label(195, 150, 100, 22, "Todo", 16, Color.RED))
             .circle(175, 187, 7, Color.YELLOW, Width.W1, FillMode.FULL)
-            .text(
-                195,
-                180,
-                "Awaiting",
-                Font.FONT_16,
-                Color.YELLOW,
-                Color.TRANSPARENT
-            )
+            .text(label(195, 180, 100, 22, "Awaiting", 16, Color.YELLOW))
             .circle(175, 217, 7, Color.BLACK, Width.W1, FillMode.FULL)
-            .text(
-                195,
-                210,
-                "Finished",
-                Font.FONT_16,
-                Color.BLACK,
-                Color.TRANSPARENT
-            );
+            .text(label(195, 210, 100, 22, "Finished", 16, Color.BLACK));
 
         int chartLeft = 320;
         int chartTop = 10;
@@ -162,34 +143,14 @@ public final class DashboardSample {
                 );
             }
 
-            display.text(
-                barCenter - 10,
-                165,
-                workDayLabels[barIndex],
-                Font.FONT_12,
-                Color.BLACK,
-                Color.TRANSPARENT
-            );
+            display.text(label(barCenter - 20, 165, 40, 16,
+                workDayLabels[barIndex], 12, Color.BLACK));
         }
 
         int totalWorkHours = Arrays.stream(workHours).sum();
         display
-            .text(
-                320,
-                210,
-                "Total hours spend: " + totalWorkHours,
-                Font.FONT_16,
-                Color.BLACK,
-                Color.TRANSPARENT
-            )
-            .text(
-                320,
-                240,
-                "Total Projects: " + totalTaskCount,
-                Font.FONT_16,
-                Color.BLACK,
-                Color.TRANSPARENT
-            );
+            .text(label(320, 210, 300, 22, "Total hours spend: " + totalWorkHours, 16, Color.BLACK))
+            .text(label(320, 240, 300, 22, "Total Projects: " + totalTaskCount, 16, Color.BLACK));
 
         return display.document();
     }
@@ -209,14 +170,11 @@ public final class DashboardSample {
         );
         String tickText = Integer.toString(hour);
 
-        display.text(
-            chartLeft - tickText.length() * 8 - 6,
-            Math.max(chartTop, Math.min(chartBottom - 12, tickY - 6)),
-            tickText,
-            Font.FONT_12,
-            Color.BLACK,
-            Color.TRANSPARENT
-        );
+        display.text(TextBox.builder(chartLeft - 40,
+                Math.max(chartTop, Math.min(chartBottom - 12, tickY - 6)), 34, 16)
+            .horizontalAlign(HorizontalAlign.RIGHT)
+            .span(TextSpan.builder(tickText).family(DEVICE_FONT).size(12).build())
+            .build());
 
         if (hour != maxWorkHours) {
             display.line(
@@ -229,5 +187,11 @@ public final class DashboardSample {
                 LineStyle.DOTTED
             );
         }
+    }
+
+    private static TextBox label(int x, int y, int width, int height,
+                                 String text, int size, Color color) {
+        return new TextBox(x, y, width, height, List.of(
+            TextSpan.builder(text).family(DEVICE_FONT).size(size).color(color).build()));
     }
 }

@@ -75,8 +75,8 @@ void DrawImage(const PaperCommand& command) {
             }
 
             Paint_DrawPoint(
-                x + sx+1,
-                y + sy+1,
+                x + sx,
+                y + sy,
                 pixel,
                 DOT_PIXEL_1X1,
                 DOT_STYLE_DFT

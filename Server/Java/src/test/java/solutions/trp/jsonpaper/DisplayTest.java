@@ -23,14 +23,13 @@ class DisplayTest {
             .rectangle(11, 12, 13, 14, Color.RED, Width.W4, FillMode.FULL)
             .circle(15, 16, 17, Color.YELLOW, Width.W2, FillMode.EMPTY)
             .pieSlice(18, 19, 20, 270, 90, Color.RED)
-            .text(
-                21, 22, "A \"quoted\" value",
-                Font.FONT_24, Color.BLACK, Color.TRANSPARENT
-            );
+            .text(TextBox.builder(21, 22, 200, 40)
+                .span(TextSpan.builder("A \"quoted\" value").size(24).build())
+                .build());
 
         JsonNode root = objectMapper.readTree(display.toJson());
 
-        assertEquals("1.0", root.get("version").textValue());
+        assertEquals("2.0", root.get("version").textValue());
         assertEquals(8, root.get("commands").size());
         assertEquals("clear_window", root.at("/commands/1/cmd").textValue());
         assertEquals(1, root.at("/commands/1/args/x_start").intValue());
@@ -42,9 +41,9 @@ class DisplayTest {
         assertEquals(90, root.at("/commands/6/args/sweep_angle").intValue());
         assertEquals(
             "A \"quoted\" value",
-            root.at("/commands/7/args/text").textValue()
+            root.at("/commands/7/args/spans/0/text").textValue()
         );
-        assertEquals("font24", root.at("/commands/7/args/font").textValue());
+        assertEquals("sans", root.at("/commands/7/args/spans/0/family").textValue());
         assertEquals(
             "transparent",
             root.at("/commands/7/args/background").textValue()
@@ -58,7 +57,7 @@ class DisplayTest {
             .line(1, 2, 3, 4)
             .rectangle(1, 2, 3, 4)
             .circle(1, 2, 1)
-            .text(1, 2, "text")
+            .text(new TextBox(1, 2, 100, 20, List.of(new TextSpan("text", 16, Color.BLACK))))
             .document();
 
         List<DisplayCommand> commands = document.commands();
@@ -68,7 +67,7 @@ class DisplayTest {
         assertEquals("solid", commands.get(1).args().get("style"));
         assertEquals("empty", commands.get(2).args().get("fill"));
         assertEquals("empty", commands.get(3).args().get("fill"));
-        assertEquals("font16", commands.get(4).args().get("font"));
+        assertEquals("word", commands.get(4).args().get("wrap"));
         assertEquals("transparent", commands.get(4).args().get("background"));
     }
 
@@ -91,7 +90,8 @@ class DisplayTest {
 
     @Test
     void prettyJsonRepresentsTheSameDocument() throws Exception {
-        Display display = new Display().text(1, 2, "hello");
+        Display display = new Display().text(
+            new TextBox(1, 2, 100, 20, List.of(new TextSpan("hello", 16, Color.BLACK))));
 
         assertEquals(
             objectMapper.readTree(display.toJson()),

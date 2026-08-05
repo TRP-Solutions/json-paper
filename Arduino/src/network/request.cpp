@@ -230,6 +230,11 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
         return commands;
     }
 
+    if (doc["version"].as<std::string>() != "2.0") {
+        Serial.println("Unsupported document version (expected 2.0)");
+        return commands;
+    }
+
     JsonArray jsonCommands = doc["commands"];
     if (jsonCommands.isNull()) {
         Serial.println("JSON response has no 'commands' array");
@@ -241,6 +246,31 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
         PaperCommand command;
 
         command.name = item["cmd"].as<const char*>();
+
+        if (command.name == "draw_text") {
+            JsonObject args = item["args"];
+            auto& text = command.text;
+            text.x = args["x"] | 0; text.y = args["y"] | 0;
+            text.width = args["width"] | 0; text.height = args["height"] | 0;
+            text.background = (args["background"] | "transparent");
+            text.horizontalAlign = (args["horizontal_align"] | "left");
+            text.verticalAlign = (args["vertical_align"] | "top");
+            text.wrap = (args["wrap"] | "word");
+            text.overflow = (args["overflow"] | "ellipsis");
+            text.lineSpacing = args["line_spacing"] | 0;
+            for (JsonObject source : args["spans"].as<JsonArray>()) {
+                PaperTextSpan span;
+                span.text = source["text"].as<std::string>();
+                span.family = (source["family"] | "sans");
+                span.weight = (source["weight"] | "regular");
+                span.size = source["size"] | 0;
+                span.color = (source["color"] | "black");
+                span.letterSpacing = source["letter_spacing"] | 0;
+                span.underline = source["underline"] | false;
+                span.strikeout = source["strikeout"] | false;
+                text.spans.push_back(std::move(span));
+            }
+        }
 
         if (item.containsKey("args")) {
             JsonObject args = item["args"];

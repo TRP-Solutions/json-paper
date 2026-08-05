@@ -86,6 +86,11 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
         json parsed = json::parse(res->body);
         std::cout << parsed.dump(4) << std::endl;
 
+        if (parsed.value("version", "") != "2.0") {
+            std::cerr << "Unsupported document version (expected 2.0)\n";
+            return {};
+        }
+
         for (const auto& item : parsed["commands"])
         {
             PaperCommand command{};
@@ -99,6 +104,31 @@ std::vector<PaperCommand> Request::RequestConfig(std::string addr) {
             }
 
             command.name = cmdStr;
+
+            if (cmdStr == "draw_text") {
+                const auto& args = item.at("args");
+                auto& text = command.text;
+                text.x = args.at("x").get<int>(); text.y = args.at("y").get<int>();
+                text.width = args.at("width").get<int>(); text.height = args.at("height").get<int>();
+                text.background = args.value("background", "transparent");
+                text.horizontalAlign = args.value("horizontal_align", "left");
+                text.verticalAlign = args.value("vertical_align", "top");
+                text.wrap = args.value("wrap", "word");
+                text.overflow = args.value("overflow", "ellipsis");
+                text.lineSpacing = args.value("line_spacing", 0);
+                for (const auto& source : args.at("spans")) {
+                    PaperTextSpan span;
+                    span.text = source.at("text").get<std::string>();
+                    span.family = source.value("family", "sans");
+                    span.weight = source.value("weight", "regular");
+                    span.size = source.at("size").get<int>();
+                    span.color = source.value("color", "black");
+                    span.letterSpacing = source.value("letter_spacing", 0);
+                    span.underline = source.value("underline", false);
+                    span.strikeout = source.value("strikeout", false);
+                    text.spans.push_back(std::move(span));
+                }
+            }
 
             // --- args ---
             if (item.contains("args"))

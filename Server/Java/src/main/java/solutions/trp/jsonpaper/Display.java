@@ -13,7 +13,8 @@ import java.util.Map;
 import java.util.Objects;
 
 public final class Display {
-    public static final String VERSION = "1.0";
+    public static final String VERSION = "2.0";
+    public static final int MAX_DOCUMENT_BYTES = 128 * 1024;
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -158,29 +159,15 @@ public final class Display {
         ));
     }
 
-    public Display text(int x, int y, String text) {
-        return text(
-            x, y, text,
-            Font.FONT_16, Color.BLACK, Color.TRANSPARENT
-        );
+    public Display text(TextBox textBox) {
+        Objects.requireNonNull(textBox, "textBox");
+        return add("draw_text", OBJECT_MAPPER.convertValue(textBox,
+            OBJECT_MAPPER.getTypeFactory().constructMapType(LinkedHashMap.class, String.class, Object.class)));
     }
 
-    public Display text(
-        int x,
-        int y,
-        String text,
-        Font font,
-        Color foreground,
-        Color background
-    ) {
-        return add("draw_string", args(
-            "x", x,
-            "y", y,
-            "text", Objects.requireNonNull(text, "text"),
-            "font", font,
-            "foreground", foreground,
-            "background", background
-        ));
+    public Display rasterText(TextBox textBox, RasterFontFamily fonts) {
+        Objects.requireNonNull(textBox, "textBox");
+        return image(textBox.x(), textBox.y(), RasterTextRenderer.render(textBox, fonts), Color.TRANSPARENT);
     }
 
     public Display image(int x, int y, BufferedImage image) {
@@ -240,7 +227,7 @@ public final class Display {
 
     public String toJson() {
         try {
-            return OBJECT_MAPPER.writeValueAsString(document());
+            return checkedJson(false);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Could not serialize display document", exception);
         }
@@ -248,11 +235,20 @@ public final class Display {
 
     public String toPrettyJson() {
         try {
-            return OBJECT_MAPPER.writerWithDefaultPrettyPrinter()
-                .writeValueAsString(document());
+            return checkedJson(true);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Could not serialize display document", exception);
         }
+    }
+
+    private String checkedJson(boolean pretty) throws JsonProcessingException {
+        String json = pretty
+            ? OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(document())
+            : OBJECT_MAPPER.writeValueAsString(document());
+        if (json.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > MAX_DOCUMENT_BYTES) {
+            throw new IllegalStateException("display document exceeds the firmware 128 KB limit");
+        }
+        return json;
     }
 
     private Display add(String command, Map<String, Object> arguments) {

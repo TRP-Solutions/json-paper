@@ -16,12 +16,7 @@ std::unordered_map<std::string, CmdHandler> cmdMap = {
     {"draw_circle", DrawCircle},
     {"draw_pie_slice", DrawPieSlice},
     {"draw_image", DrawImage},
-
-    {"draw_string", DrawString},
-
-    {"draw_char", DrawChar},
-    {"draw_num", DrawNum},
-    {"draw_time", DrawTime}
+    {"draw_text", DrawText}
 };
 std::unordered_map<std::string, uint8_t> colorMap = {
     {"white", EPD_5in79G_WHITE},
@@ -45,13 +40,6 @@ std::unordered_map<std::string, DOT_STYLE> dotStyleMap = {
     {"rightup", DOT_FILL_RIGHTUP}
 };
 
-std::unordered_map<std::string, sFONT*> fontMap = {
-    {"font8", &Font8},
-    {"font12", &Font12},
-    {"font16", &Font16},
-    {"font20", &Font20},
-    {"font24", &Font24}
-};
 
 void execute_command(const PaperCommand& command) {
     auto it = cmdMap.find(command.name);

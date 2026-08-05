@@ -92,8 +92,8 @@ void sleepUntilNextCron(time_t now);
 
 
 void setup() {
-  // Initialize serial communication at 9600 bits per second:
-  Serial.begin(9600);
+  // Match the ESP32 boot log and the PlatformIO serial monitor.
+  Serial.begin(115200);
 
   delay(1000);
 

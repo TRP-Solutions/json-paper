@@ -11,13 +11,60 @@ enum Color: string
 	case TRANSPARENT = "transparent";
 }
 
-enum Font: string
+enum FontWeight: string { case REGULAR = "regular"; case BOLD = "bold"; }
+enum HorizontalAlign: string { case LEFT = "left"; case CENTER = "center"; case RIGHT = "right"; }
+enum VerticalAlign: string { case TOP = "top"; case MIDDLE = "middle"; case BOTTOM = "bottom"; }
+enum TextOverflow: string { case CLIP = "clip"; case ELLIPSIS = "ellipsis"; }
+
+final readonly class TextSpan implements JsonSerializable
 {
-	case FONT_8 = "font8";
-	case FONT_12 = "font12";
-	case FONT_16 = "font16";
-	case FONT_20 = "font20";
-	case FONT_24 = "font24";
+	public function __construct(
+		public string $text,
+		public string $family = "sans",
+		public FontWeight $weight = FontWeight::REGULAR,
+		public int $size = 16,
+		public Color $color = Color::BLACK,
+		public int $letter_spacing = 0,
+		public bool $underline = false,
+		public bool $strikeout = false
+	) {
+		if ($family === '') throw new InvalidArgumentException('family must not be empty');
+		if ($size < 6 || $size > 96) throw new InvalidArgumentException('size must be 6-96 pixels');
+		if ($color === Color::TRANSPARENT) throw new InvalidArgumentException('text color cannot be transparent');
+	}
+	public function jsonSerialize(): array { return get_object_vars($this); }
+}
+
+final readonly class TextBox implements JsonSerializable
+{
+	/** @param list<TextSpan> $spans */
+	public function __construct(
+		public int $x,
+		public int $y,
+		public int $width,
+		public int $height,
+		public array $spans,
+		public Color $background = Color::TRANSPARENT,
+		public HorizontalAlign $horizontal_align = HorizontalAlign::LEFT,
+		public VerticalAlign $vertical_align = VerticalAlign::TOP,
+		public string $wrap = 'word',
+		public TextOverflow $overflow = TextOverflow::ELLIPSIS,
+		public int $line_spacing = 0
+	) {
+		if ($width <= 0 || $height <= 0) throw new InvalidArgumentException('text box width and height must be positive');
+		if ($spans === []) throw new InvalidArgumentException('at least one text span is required');
+		foreach ($spans as $span) if (!$span instanceof TextSpan) throw new InvalidArgumentException('spans must contain TextSpan values');
+		if ($wrap !== 'word') throw new InvalidArgumentException('only word wrapping is supported');
+		if ($line_spacing < 0) throw new InvalidArgumentException('line spacing must not be negative');
+	}
+	public function jsonSerialize(): array { return get_object_vars($this); }
+}
+
+final readonly class RasterFontFamily
+{
+	public function __construct(public string $regular, public string $bold) {
+		if ($regular === '' || $bold === '') throw new InvalidArgumentException('font paths must not be empty');
+	}
 }
 
 enum Width: string
@@ -218,28 +265,37 @@ class Display
 		return $this;
 	}
 
-	public function text(
-		int    $x,
-		int    $y,
-		string $text,
-		Font   $font = Font::FONT_16,
-		Color  $foreground = Color::BLACK,
-		Color  $background = Color::TRANSPARENT
-	): self {
+	public function text(TextBox $box): self {
 
 		$this->commands[] = [
-			"cmd" => "draw_string",
-			"args" => [
-				"x" => $x,
-				"y" => $y,
-				"text" => $text,
-				"font" => $font,
-				"foreground" => $foreground,
-				"background" => $background
-			]
+			"cmd" => "draw_text",
+			"args" => $box
 		];
 
 		return $this;
+	}
+
+	public function rasterText(TextBox $box, RasterFontFamily $fonts): self
+	{
+		if (!extension_loaded('imagick')) throw new RuntimeException('Imagick is required for rasterText');
+		$image = new Imagick();
+		$image->newImage($box->width, $box->height, new ImagickPixel('transparent'), 'png');
+		if ($box->background !== Color::TRANSPARENT) {
+			$image->setImageBackgroundColor(new ImagickPixel($box->background->value));
+			$image->setImageAlphaChannel(Imagick::ALPHACHANNEL_REMOVE);
+		}
+		$draw = new ImagickDraw();
+		$y = 0;
+		foreach ($box->spans as $span) {
+			$draw->setFont($span->weight === FontWeight::BOLD ? $fonts->bold : $fonts->regular);
+			$draw->setFontSize($span->size);
+			$draw->setFillColor(new ImagickPixel($span->color->value));
+			$metrics = $image->queryFontMetrics($draw, $span->text);
+			$y = max($y, (int)ceil($metrics['ascender']));
+			$draw->annotation(0, $y, str_replace(["\r", "\t"], ['', '    '], $span->text));
+		}
+		$image->drawImage($draw);
+		return $this->image($box->x, $box->y, $image, Color::TRANSPARENT);
 	}
 
 	public function image(
@@ -273,7 +329,7 @@ class Display
 	public function array(): array
 	{
 		return [
-			"version" => "1.0",
+			"version" => "2.0",
 			"commands" => $this->commands
 		];
 	}
@@ -282,10 +338,12 @@ class Display
 		int $flags = JSON_PRETTY_PRINT
 	): string {
 
-		return json_encode(
+		$json = json_encode(
 			$this->array(),
-			$flags
+			$flags | JSON_THROW_ON_ERROR
 		);
+		if (strlen($json) > 128 * 1024) throw new LengthException('display document exceeds the firmware 128 KB limit');
+		return $json;
 	}
 
 	public function output(): void

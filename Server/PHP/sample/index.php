@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__."/../lib/Display.php";
 
+const DEVICE_FONT = 'helvetica';
+
 $display = new Display();
 
 $img = new \Imagick();
@@ -76,12 +78,7 @@ $display
         color: Color::RED,
         fill: FillMode::FULL
     )
-    ->text(
-        x: 195,
-        y: 150,
-        text: "Todo",
-        foreground: Color::RED,
-    )
+    ->text(new TextBox(195, 150, 100, 24, [new TextSpan("Todo", family: DEVICE_FONT, color: Color::RED)]))
 
     ->circle(
         x: 175,
@@ -91,12 +88,7 @@ $display
         fill: FillMode::FULL
     )
 
-    ->text(
-        x: 195,
-        y: 180,
-        text: "Awaiting",
-        foreground: Color::YELLOW,
-    )
+    ->text(new TextBox(195, 180, 110, 24, [new TextSpan("Awaiting", family: DEVICE_FONT, color: Color::YELLOW)]))
 
     ->circle(
         x: 175,
@@ -106,12 +98,7 @@ $display
         fill: FillMode::FULL
     )
 
-    ->text(
-        x: 195,
-        y: 210,
-        text: "Finished",
-        foreground: Color::BLACK,
-    );
+    ->text(new TextBox(195, 210, 110, 24, [new TextSpan("Finished", family: DEVICE_FONT)]));
 
 $week_1_work_hours = [
     $mon_1_work_hours,
@@ -166,14 +153,11 @@ foreach ($tick_values as $hour) {
     );
     $tick_text = (string) $hour;
 
-    $display->text(
-        x: $chart_left - strlen($tick_text) * 8 - 6,
-        y: max($chart_top, min($chart_bottom - 12, $tick_y - 6)),
-        text: $tick_text,
-        font: Font::FONT_12,
-        foreground: Color::BLACK,
-        background: Color::TRANSPARENT
-    );
+    $display->text(new TextBox(
+        $chart_left - 40, max($chart_top, min($chart_bottom - 12, $tick_y - 6)),
+        34, 18, [new TextSpan($tick_text, family: DEVICE_FONT, size: 12)],
+        horizontal_align: HorizontalAlign::RIGHT
+    ));
 
     if ($hour !== $max_work_hours) {
         $display->line(
@@ -208,35 +192,18 @@ foreach ($work_hours as $bar_index => $hours) {
         );
     }
 
-    $display->text(
-        x: $bar_center - 10,
-        y: 165,
-        text: $work_day_labels[$bar_index],
-        font: Font::FONT_12,
-        foreground: Color::BLACK,
-        background: Color::TRANSPARENT
-    );
+    $display->text(new TextBox($bar_center - 20, 165, 40, 18,
+        [new TextSpan($work_day_labels[$bar_index], family: DEVICE_FONT, size: 12)],
+        horizontal_align: HorizontalAlign::CENTER));
 }
 
 $total_work_hours = array_sum($work_hours);
 $total_projects = $total_task_count;
 
 $display
-    ->text(
-        x: 320,
-        y: 210,
-        text: "Total hours spend: " . $total_work_hours,
-        font: Font::FONT_16,
-        foreground: Color::BLACK,
-        background: Color::TRANSPARENT
-    )
-    ->text(
-        x: 320,
-        y: 240,
-        text: "Total Projects: " . $total_projects,
-        font: Font::FONT_16,
-        foreground: Color::BLACK,
-        background: Color::TRANSPARENT
-    );
+    ->text(new TextBox(320, 210, 300, 24,
+        [new TextSpan("Total hours spend: " . $total_work_hours, family: DEVICE_FONT)]))
+    ->text(new TextBox(320, 240, 300, 24,
+        [new TextSpan("Total Projects: " . $total_projects, family: DEVICE_FONT)]));
 
 $display->output();

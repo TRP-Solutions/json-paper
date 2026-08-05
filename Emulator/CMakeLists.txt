@@ -38,6 +38,13 @@ FetchContent_MakeAvailable(raylib json httplib)
 set(PROJECT_ROOT ${CMAKE_SOURCE_DIR}/..)
 set(ARDUINO_DIR ${PROJECT_ROOT}/Arduino)
 
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+file(GLOB FONT_ASSETS CONFIGURE_DEPENDS ${ARDUINO_DIR}/src/font/assets/*.ttf)
+execute_process(
+        COMMAND ${Python3_EXECUTABLE} ${ARDUINO_DIR}/scripts/font_codegen.py ${ARDUINO_DIR}
+        COMMAND_ERROR_IS_FATAL ANY
+)
+
 set(SOURCES
         src/main.cpp
         src/util/dev/console/console.cpp
@@ -52,11 +59,6 @@ set(SOURCES
 
         ${ARDUINO_DIR}/src/core/core.cpp
         ${ARDUINO_DIR}/src/canvas/gui_paint.cpp
-        ${ARDUINO_DIR}/src/font/font8.cpp
-        ${ARDUINO_DIR}/src/font/font12.cpp
-        ${ARDUINO_DIR}/src/font/font16.cpp
-        ${ARDUINO_DIR}/src/font/font20.cpp
-        ${ARDUINO_DIR}/src/font/font24.cpp
         ${ARDUINO_DIR}/src/e-paper/paper_command.cpp
         ${ARDUINO_DIR}/src/util/base_64_decode.cpp
         ${ARDUINO_DIR}/src/core/command/helper.cpp
@@ -71,10 +73,7 @@ set(SOURCES
         ${ARDUINO_DIR}/src/core/command/draw_circle.cpp
         ${ARDUINO_DIR}/src/core/command/draw_pie_slice.cpp
         ${ARDUINO_DIR}/src/core/command/draw_image.cpp
-        ${ARDUINO_DIR}/src/core/command/draw_char.cpp
-        ${ARDUINO_DIR}/src/core/command/draw_num.cpp
-        ${ARDUINO_DIR}/src/core/command/draw_time.cpp
-        ${ARDUINO_DIR}/src/core/command/draw_string.cpp
+        ${ARDUINO_DIR}/src/core/command/draw_text.cpp
 
 )
 set(HEADERS
@@ -91,7 +90,6 @@ set(HEADERS
         ${ARDUINO_DIR}/src/core/core.h
         ${ARDUINO_DIR}/src/network/request.h
         ${ARDUINO_DIR}/src/e-paper/paper_command.h
-        ${ARDUINO_DIR}/src/font/fonts.h
         ${ARDUINO_DIR}/src/canvas/gui_paint.h
         src/simulate/simulate.h
 

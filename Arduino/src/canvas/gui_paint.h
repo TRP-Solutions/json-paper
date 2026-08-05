@@ -5,7 +5,6 @@
 *                   their size, solid dotted line, solid rectangle hollow
 *                   rectangle, solid circle hollow circle.
 * | Info        :
-*   Achieve display characters: Display a single character, string, number
 *   Achieve time display: adaptive size display time minutes and seconds
 *----------------
 * |	This version:   V3.2
@@ -49,7 +48,6 @@
 *    but only 90.180.270 rotation is better
 * 4.add: Paint_SetMirroring() 
 *    Can Mirroring the picture, horizontal, vertical, origin
-* 5.add: Paint_DrawString_CN() 
 *    Can display Chinese(GB1312)   
 *
 * ----------------------------------------------------------------------------- 
@@ -79,7 +77,7 @@
 #define __GUI_PAINT_H
 
 #include "../debug_custom/debug.h"
-#include "../font/fonts.h"
+#include <cstdint>
 
 /**
  * Image attributes
@@ -126,8 +124,6 @@ typedef enum {
 #define RED            BLACK
 
 #define IMAGE_BACKGROUND    WHITE
-#define FONT_FOREGROUND     BLACK
-#define FONT_BACKGROUND     WHITE
 
 #define TRUE 1
 #define FALSE 0
@@ -177,18 +173,6 @@ typedef enum {
     DRAW_FILL_FULL,
 } DRAW_FILL;
 
-/**
- * Custom structure of a time attribute
-**/
-typedef struct {
-    uint16_t Year;  //0000
-    uint8_t  Month; //1 - 12
-    uint8_t  Day;   //1 - 30
-    uint8_t  Hour;  //0 - 23
-    uint8_t  Min;   //0 - 59
-    uint8_t  Sec;   //0 - 59
-} PAINT_TIME;
-extern PAINT_TIME sPaint_time;
 
 //init and Clear
 void Paint_NewImage(uint8_t *image, uint16_t Width, uint16_t Height, uint16_t Rotate, uint16_t Color);
@@ -207,20 +191,10 @@ void Paint_DrawLine(uint16_t Xstart, uint16_t Ystart, uint16_t Xend, uint16_t Ye
 void Paint_DrawRectangle(uint16_t Xstart, uint16_t Ystart, uint16_t Xend, uint16_t Yend, uint16_t Color, DOT_PIXEL Line_width, DRAW_FILL Draw_Fill);
 void Paint_DrawCircle(uint16_t X_Center, uint16_t Y_Center, uint16_t Radius, uint16_t Color, DOT_PIXEL Line_width, DRAW_FILL Draw_Fill);
 
-//Display string
-void Paint_DrawChar(uint16_t Xstart, uint16_t Ystart, const char Acsii_Char, sFONT* Font, uint16_t Color_Foreground, uint16_t Color_Background);
-void Paint_DrawString_EN(uint16_t Xstart, uint16_t Ystart, const char * pString, sFONT* Font, uint16_t Color_Foreground, uint16_t Color_Background);
-void Paint_DrawString_CN(uint16_t Xstart, uint16_t Ystart, const char * pString, cFONT* font, uint16_t Color_Foreground, uint16_t Color_Background);
-void Paint_DrawNum(uint16_t Xpoint, uint16_t Ypoint, int32_t Nummber, sFONT* Font, uint16_t Color_Foreground, uint16_t Color_Background);
-void Paint_DrawTime(uint16_t Xstart, uint16_t Ystart, PAINT_TIME *pTime, sFONT* Font, uint16_t Color_Foreground, uint16_t Color_Background);
-
 //pic
 void Paint_DrawBitMap(const unsigned char* image_buffer);
 void Paint_DrawBitMap_Paste(const unsigned char* image_buffer, uint16_t xStart, uint16_t yStart, uint16_t imageWidth, uint16_t imageHeight, uint8_t flipColor);
 void Paint_DrawImage(const unsigned char *image_buffer, uint16_t xStart, uint16_t yStart, uint16_t W_Image, uint16_t H_Image);
 #endif
-
-
-
 
 

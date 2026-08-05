@@ -85,12 +85,3 @@ bool ParseDotStyle(const std::string& s, DOT_STYLE& out) {
 
     return false;
 }
-bool ParseFont(const std::string& s, sFONT*& out) {
-    if (fontMap.count(s)) {
-        out = fontMap[s];
-        return true;
-    }
-    log(WARNING, ("invalid font: " + s).c_str());
-
-    return false;
-}

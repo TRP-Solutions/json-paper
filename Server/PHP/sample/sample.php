@@ -1,108 +1,91 @@
 <?php
-require_once __DIR__."/../lib/Display.php";
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../lib/Display.php';
+const DEVICE_FONT = 'helvetica';
+
+function span(
+    string $text,
+    int $size,
+    Color $color = Color::BLACK,
+    FontWeight $weight = FontWeight::REGULAR,
+    bool $underline = false,
+    bool $strikeout = false
+): TextSpan {
+    return new TextSpan(
+        text: $text,
+        family: DEVICE_FONT,
+        weight: $weight,
+        size: $size,
+        color: $color,
+        underline: $underline,
+        strikeout: $strikeout
+    );
+}
 
 $display = new Display();
 
-$img = new \Imagick();
-
-$img->setResolution(72, 72);
-
-$img->setOption('svg:antialias', 'false');
-$img->setOption('svg:shape-rendering', 'crispEdges');
-
-$img->setBackgroundColor(new \ImagickPixel('transparent'));
-
-$img->readImage(__DIR__ . '/../../../Media/logo.svg');
+$logo = new Imagick();
+$logo->setBackgroundColor(new ImagickPixel('transparent'));
+$logo->readImage(__DIR__ . '/../../../Media/logo.svg');
+$logo->thumbnailImage(120, 0);
 
 $display
-	->clear(Color::WHITE)
+    ->clear(Color::WHITE)
 
-	->clearWindow(
-		x_start: 10,
-		y_start: 10,
-		x_end: 80,
-		y_end: 60,
-		color: Color::RED
-	)
+    ->text(new TextBox(
+        x: 20,
+        y: 10,
+        width: 752,
+        height: 42,
+        spans: [span('JSON Paper · Rich text', 28, Color::WHITE, FontWeight::BOLD)],
+        background: Color::BLACK,
+        horizontal_align: HorizontalAlign::CENTER,
+        vertical_align: VerticalAlign::MIDDLE
+    ))
 
-	->point(
-		x: 20,
-		y: 20,
-		color: Color::BLACK,
-		width: Width::W2,
-		style: PointStyle::AROUND
-	)
+    ->clearWindow(24, 66, 84, 112, Color::YELLOW)
+    ->point(108, 89, Color::BLACK, Width::W4, PointStyle::AROUND)
+    ->line(132, 68, 218, 110, Color::BLACK, Width::W2, LineStyle::DOTTED)
+    ->rectangle(238, 68, 316, 110, Color::RED, Width::W2, FillMode::EMPTY)
+    ->rectangle(328, 78, 378, 102, Color::BLACK, Width::W1, FillMode::FULL)
+    ->circle(420, 89, 22, Color::YELLOW, Width::W2, FillMode::FULL)
+    ->circle(474, 89, 22, Color::RED, Width::W2, FillMode::EMPTY)
+    ->pieSlice(530, 89, 24, 0, 120, Color::RED)
+    ->pieSlice(530, 89, 24, 120, 120, Color::YELLOW)
+    ->pieSlice(530, 89, 24, 240, 120, Color::BLACK)
+    ->image(584, 66, $logo, Color::TRANSPARENT)
 
-	->line(
-		x_start: 0,
-		y_start: 0,
-		x_end: 100,
-		y_end: 100,
-		color: Color::BLACK,
-		width: Width::W1,
-		style: LineStyle::SOLID
-	)
+    ->text(new TextBox(
+        x: 24,
+        y: 132,
+        width: 350,
+        height: 112,
+        spans: [
+            span("Temperature\n", 16),
+            span('21 ', 42, Color::RED, FontWeight::BOLD),
+            span('°C', 26, Color::RED),
+        ],
+        background: Color::YELLOW,
+        horizontal_align: HorizontalAlign::CENTER,
+        vertical_align: VerticalAlign::MIDDLE,
+        line_spacing: 4
+    ))
 
-	->rectangle(
-		x_start: 20,
-		y_start: 70,
-		x_end: 80,
-		y_end: 80,
-		color: Color::YELLOW,
-		width: Width::W2,
-		fill: FillMode::EMPTY
-	)
-
-	->circle(
-		x: 160,
-		y: 80,
-		radius: 30,
-		color: Color::RED,
-		width: Width::W1,
-		fill: FillMode::FULL
-	)
-
-	->text(
-		x: 10,
-		y: 100,
-		text: "Hello World",
-		font: Font::FONT_16,
-		foreground: Color::BLACK,
-		background: Color::TRANSPARENT
-	)
-
-	->pieSlice(
-		x: 650,
-		y: 100,
-		radius: 70,
-		start_angle: 270,
-		sweep_angle: 90,
-		color: Color::RED
-	)
-
-	->pieSlice(
-		x: 650,
-		y: 100,
-		radius: 70,
-		start_angle: 0,
-		sweep_angle: 126,
-		color: Color::YELLOW
-	)
-
-	->pieSlice(
-		x: 650,
-		y: 100,
-		radius: 70,
-		start_angle: 126,
-		sweep_angle: 144,
-		color: Color::BLACK
-	)
-
-	->image(
-		x: 10,
-		y: 150,
-		img: $img,
-		transparent: Color::TRANSPARENT
-	);
+    ->text(new TextBox(
+        x: 398,
+        y: 132,
+        width: 370,
+        height: 112,
+        spans: [
+            span('MESSAGE', 18, Color::BLACK, FontWeight::BOLD, underline: true),
+            span("\nABCDEFGHIJKLMNOPQRSTUVXYZWÆØQabcdefghijklmnopqrstuvxyzwæøå!\"#%&/()=. 14:30.", 17),
+        ],
+        background: Color::WHITE,
+        horizontal_align: HorizontalAlign::LEFT,
+        vertical_align: VerticalAlign::MIDDLE,
+        line_spacing: 3
+    ));
 
 $display->output();
